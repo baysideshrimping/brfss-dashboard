@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Data - BRFSS Validation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        nav {
+            background: #1e3a5f;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        nav a:hover, nav a.active {
+            background: rgba(255,255,255,0.2);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2rem;
+            color: #1e3a5f;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .upload-area {
+            background: white;
+            border: 3px dashed #ccc;
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: #2d5a87;
+            background: #f0f7ff;
+        }
+
+        .upload-area.dragover {
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            color: #2d5a87;
+            margin-bottom: 20px;
+        }
+
+        .upload-area h2 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #2d5a87;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background: #1e3a5f;
+        }
+
+        .selected-file {
+            background: #e8f4f8;
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .selected-file.show {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            font-size: 1.5rem;
+        }
+
+        .remove-file {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .alert.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .format-info {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .format-info h3 {
+            color: #1e3a5f;
+            margin-bottom: 15px;
+        }
+
+        .format-info code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.9rem;
+        }
+
+        .format-info pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.8rem;
+            margin: 15px 0;
+        }
+
+        .field-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .field-item {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .field-item.required {
+            border-left: 3px solid #dc3545;
+        }
+
+        .field-item.optional {
+            border-left: 3px solid #28a745;
+        }
+
+        .field-item .desc {
+            color: #666;
+            font-size: 0.75rem;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/submit" class="active">Submit Data</a></li>
+            <li><a href="/validation">Dashboard</a></li>
+            <li><a href="/map">State Map</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>Submit BRFSS Data</h1>
+            <p>Upload your data file for validation against CDC BRFSS format</p>
+        </header>
+
+        {% if message %}
+        <div class="alert success">{{ message }}</div>
+        {% endif %}
+
+        {% if error %}
+        <div class="alert error">{{ error }}</div>
+        {% endif %}
+
+        <form method="POST" enctype="multipart/form-data" id="uploadForm">
+            <div class="upload-area" id="dropZone">
+                <div class="upload-icon">📁</div>
+                <h2>Drag & Drop your file here</h2>
+                <p>or click to browse</p>
+                <input type="file" name="file" id="fileInput" class="file-input" accept=".csv,.json">
+                <button type="button" class="btn" onclick="document.getElementById('fileInput').click()">
+                    Select File
+                </button>
+                <div class="selected-file" id="selectedFile">
+                    <div class="file-info">
+                        <span class="file-icon">📄</span>
+                        <span id="fileName"></span>
+                    </div>
+                    <button type="button" class="remove-file" onclick="removeFile()">Remove</button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn" style="width: 100%; display: none;">
+                Upload & Validate
+            </button>
+        </form>
+
+        <div class="format-info">
+            <h3>Accepted BRFSS Data Formats</h3>
+            <p>Upload a <code>.csv</code> or <code>.json</code> file. We auto-detect and validate two formats:</p>
+
+            <div style="display: flex; gap: 10px; margin: 20px 0;">
+                <button class="format-tab active" onclick="showFormat('raw')" id="tab-raw">Raw Survey Data</button>
+                <button class="format-tab" onclick="showFormat('agg')" id="tab-agg">Aggregated Data</button>
+            </div>
+
+            <div id="format-raw" class="format-section">
+                <p style="color: #666; margin-bottom: 15px;"><strong>Individual respondent data</strong> - Each row is one survey response with BRFSS variable codes.</p>
+
+                <h4 style="color: #dc3545;">Key Fields</h4>
+                <div class="field-list">
+                    <div class="field-item required">
+                        _STATE
+                        <span class="desc">State FIPS code (13=GA, 12=FL...)</span>
+                    </div>
+                    <div class="field-item required">
+                        IYEAR
+                        <span class="desc">Survey year (2023)</span>
+                    </div>
+                    <div class="field-item optional">
+                        GENHLTH
+                        <span class="desc">General health (1-5, 7=DK, 9=Ref)</span>
+                    </div>
+                    <div class="field-item optional">
+                        PHYSHLTH
+                        <span class="desc">Physical health days (0-30, 88=None)</span>
+                    </div>
+                    <div class="field-item optional">
+                        MENTHLTH
+                        <span class="desc">Mental health days (0-30, 88=None)</span>
+                    </div>
+                    <div class="field-item optional">
+                        DIABETE4
+                        <span class="desc">Diabetes status (1-4, 7=DK, 9=Ref)</span>
+                    </div>
+                    <div class="field-item optional">
+                        SMOKE100
+                        <span class="desc">Smoked 100 cigarettes (1=Yes, 2=No)</span>
+                    </div>
+                    <div class="field-item optional">
+                        BPHIGH6
+                        <span class="desc">High blood pressure (1-4, 7=DK, 9=Ref)</span>
+                    </div>
+                </div>
+                <p style="color: #888; font-size: 0.9em; margin-top: 10px;">+ 50 more BRFSS variables supported (EXERANY2, CHECKUP1, CVDINFR4, ASTHMA3, etc.)</p>
+
+                <h4 style="margin-top: 20px;">Example CSV (Raw Survey)</h4>
+                <pre style="font-size: 0.85em;">_STATE,IYEAR,GENHLTH,PHYSHLTH,MENTHLTH,DIABETE4,SMOKE100,BPHIGH6,CHECKUP1
+13,2023,2,0,5,3,2,2,1
+13,2023,1,3,0,4,1,1,2
+13,2023,4,15,10,3,2,3,1</pre>
+                <p style="color: #666; font-size: 0.85em; margin-top: 5px;">State 13 = Georgia. Response codes: GENHLTH 1=Excellent to 5=Poor</p>
+            </div>
+
+            <div id="format-agg" class="format-section" style="display: none;">
+                <p style="color: #666; margin-bottom: 15px;"><strong>Summary statistics</strong> - Prevalence rates aggregated by state and topic.</p>
+
+                <h4 style="color: #dc3545;">Required Fields</h4>
+                <div class="field-list">
+                    <div class="field-item required">
+                        year
+                        <span class="desc">Survey year (1984-2025)</span>
+                    </div>
+                    <div class="field-item required">
+                        locationabbr
+                        <span class="desc">State abbrev (CA, TX, NY...)</span>
+                    </div>
+                    <div class="field-item required">
+                        locationdesc
+                        <span class="desc">Full state name</span>
+                    </div>
+                    <div class="field-item required">
+                        topic
+                        <span class="desc">Health topic (Obesity, Diabetes...)</span>
+                    </div>
+                    <div class="field-item required">
+                        question
+                        <span class="desc">Survey question text</span>
+                    </div>
+                    <div class="field-item required">
+                        data_value
+                        <span class="desc">Prevalence % (0-100)</span>
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 20px; color: #28a745;">Optional Fields</h4>
+                <div class="field-list">
+                    <div class="field-item optional">
+                        sample_size
+                        <span class="desc">Number of respondents</span>
+                    </div>
+                    <div class="field-item optional">
+                        confidence_limit_low / confidence_limit_high
+                        <span class="desc">Confidence interval bounds</span>
+                    </div>
+                    <div class="field-item optional">
+                        break_out / break_out_category
+                        <span class="desc">Demographic breakdown</span>
+                    </div>
+                </div>
+
+                <h4 style="margin-top: 20px;">Example CSV (Aggregated)</h4>
+                <pre style="font-size: 0.85em;">year,locationabbr,locationdesc,topic,question,data_value,sample_size
+2023,CA,California,Obesity,Percent of adults with obesity,25.1,5420
+2023,TX,Texas,Diabetes,Percent of adults with diabetes,12.8,4890</pre>
+            </div>
+        </div>
+
+        <style>
+            .format-tab {
+                padding: 10px 20px;
+                border: 2px solid #2d5a87;
+                background: white;
+                color: #2d5a87;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 500;
+                transition: all 0.2s;
+            }
+            .format-tab:hover { background: #f0f7ff; }
+            .format-tab.active { background: #2d5a87; color: white; }
+        </style>
+
+        <script>
+            function showFormat(format) {
+                document.getElementById('format-raw').style.display = format === 'raw' ? 'block' : 'none';
+                document.getElementById('format-agg').style.display = format === 'agg' ? 'block' : 'none';
+                document.getElementById('tab-raw').classList.toggle('active', format === 'raw');
+                document.getElementById('tab-agg').classList.toggle('active', format === 'agg');
+            }
+        </script>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const selectedFile = document.getElementById('selectedFile');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                showSelectedFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                showSelectedFile(fileInput.files[0]);
+            }
+        });
+
+        function showSelectedFile(file) {
+            fileName.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
+            selectedFile.classList.add('show');
+            submitBtn.style.display = 'block';
+        }
+
+        function removeFile() {
+            fileInput.value = '';
+            selectedFile.classList.remove('show');
+            submitBtn.style.display = 'none';
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+    </script>
+</body>
+</html>

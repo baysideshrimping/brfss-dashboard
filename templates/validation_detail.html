@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validation Result - {{ result.submission_id }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        nav {
+            background: #1e3a5f;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        nav a:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px 40px;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: #2d5a87;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            color: #1e3a5f;
+        }
+
+        header .meta {
+            color: #666;
+            font-size: 0.95rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .status-badge.passed {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-badge.passed_with_errors {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .summary-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .summary-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #1e3a5f;
+        }
+
+        .summary-card .label {
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        .summary-card.errors .value { color: #dc3545; }
+        .summary-card.warnings .value { color: #ffc107; }
+        .summary-card.valid .value { color: #28a745; }
+
+        .section {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        .section h2 {
+            color: #1e3a5f;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .info-list {
+            list-style: none;
+        }
+
+        .info-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            color: #555;
+        }
+
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+
+        .info-list li::before {
+            content: "i";
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #17a2b8;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            font-size: 0.75rem;
+            line-height: 20px;
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #555;
+            position: sticky;
+            top: 0;
+        }
+
+        .severity-error {
+            color: #dc3545;
+            font-weight: 500;
+        }
+
+        .severity-warning {
+            color: #856404;
+            font-weight: 500;
+        }
+
+        .error-table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+
+        .data-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .data-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+        }
+
+        .data-item .label {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .data-item .value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .tag {
+            background: #e9ecef;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+
+        .actions {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 25px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2d5a87;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e3a5f;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="/submit">Submit Data</a></li>
+            <li><a href="/validation">Dashboard</a></li>
+            <li><a href="/map">State Map</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <a href="/validation" class="back-link">Back to Dashboard</a>
+
+        <header>
+            <div>
+                <h1>{{ result.filename }}</h1>
+                <p class="meta">
+                    Submission ID: <code>{{ result.submission_id }}</code> |
+                    Submitted: {{ result.timestamp }}
+                </p>
+            </div>
+            <span class="status-badge {{ result.status }}">
+                {{ result.status | replace('_', ' ') | title }}
+            </span>
+        </header>
+
+        <div class="summary-grid">
+            <div class="summary-card">
+                <div class="value">{{ result.row_count }}</div>
+                <div class="label">Total Rows</div>
+            </div>
+            <div class="summary-card valid">
+                <div class="value">{{ result.valid_rows }}</div>
+                <div class="label">Valid Rows</div>
+            </div>
+            <div class="summary-card errors">
+                <div class="value">{{ result.error_count }}</div>
+                <div class="label">Errors</div>
+            </div>
+            <div class="summary-card warnings">
+                <div class="value">{{ result.warning_count }}</div>
+                <div class="label">Warnings</div>
+            </div>
+        </div>
+
+        {% if result.info %}
+        <div class="section">
+            <h2>Validation Summary</h2>
+            <ul class="info-list">
+                {% for info in result.info %}
+                <li>{{ info }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if result.data_summary %}
+        <div class="section">
+            <h2>Data Summary</h2>
+            <div class="data-summary">
+                <div class="data-item">
+                    <div class="label">States</div>
+                    <div class="value">{{ result.data_summary.states or 0 }}</div>
+                </div>
+                <div class="data-item">
+                    <div class="label">Years</div>
+                    <div class="value">
+                        {% if result.data_summary.years %}
+                            {{ result.data_summary.years | join(', ') }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="data-item">
+                    <div class="label">Indicators Present</div>
+                    <div class="tag-list">
+                        {% for ind in result.data_summary.indicators_present %}
+                        <span class="tag">{{ ind | replace('_pct', '') | replace('_', ' ') | title }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if result.errors %}
+        <div class="section">
+            <h2>Errors ({{ result.error_count }})</h2>
+            <div class="error-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Row</th>
+                            <th>Field</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for err in result.errors[:100] %}
+                        <tr>
+                            <td>{{ err.row }}</td>
+                            <td><code>{{ err.field }}</code></td>
+                            <td class="severity-error">{{ err.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if result.error_count > 100 %}
+            <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
+                Showing first 100 of {{ result.error_count }} errors.
+            </p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if result.warnings %}
+        <div class="section">
+            <h2>Warnings ({{ result.warning_count }})</h2>
+            <div class="error-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Row</th>
+                            <th>Field</th>
+                            <th>Message</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for warn in result.warnings[:50] %}
+                        <tr>
+                            <td>{{ warn.row }}</td>
+                            <td><code>{{ warn.field }}</code></td>
+                            <td class="severity-warning">{{ warn.message }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if result.warning_count > 50 %}
+            <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
+                Showing first 50 of {{ result.warning_count }} warnings.
+            </p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="actions">
+            <a href="/submit" class="btn btn-primary">Submit Another File</a>
+            <a href="/validation" class="btn btn-secondary">Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

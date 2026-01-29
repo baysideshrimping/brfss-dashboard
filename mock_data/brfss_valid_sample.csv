@@ -1,0 +1,17 @@
+year,locationabbr,locationdesc,class,topic,question,response,break_out,break_out_category,sample_size,data_value,confidence_limit_low,confidence_limit_high,data_value_unit,data_value_type,datasource
+2023,CA,California,Chronic Health Indicators,Obesity,Percent of adults aged 18 years and older who have obesity,Yes,Overall,Overall,5420,25.1,23.8,26.4,%,Crude Prevalence,BRFSS
+2023,CA,California,Chronic Health Indicators,Diabetes,Percent of adults with diabetes,Yes,Overall,Overall,5380,10.2,9.4,11.0,%,Crude Prevalence,BRFSS
+2023,CA,California,Health Risk Behaviors,Current Smoker Status,Percent of adults who are current smokers,Yes,Overall,Overall,5402,10.5,9.6,11.4,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Percent of adults aged 18 years and older who have obesity,Yes,Overall,Overall,4890,34.8,33.2,36.4,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Diabetes,Percent of adults with diabetes,Yes,Overall,Overall,4856,13.1,12.1,14.1,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Health Risk Behaviors,Current Smoker Status,Percent of adults who are current smokers,Yes,Overall,Overall,4872,14.2,13.1,15.3,%,Crude Prevalence,BRFSS
+2023,NY,New York,Chronic Health Indicators,Obesity,Percent of adults aged 18 years and older who have obesity,Yes,Overall,Overall,6102,27.6,26.2,29.0,%,Crude Prevalence,BRFSS
+2023,NY,New York,Chronic Health Indicators,Diabetes,Percent of adults with diabetes,Yes,Overall,Overall,6078,11.0,10.2,11.8,%,Crude Prevalence,BRFSS
+2023,NY,New York,Health Risk Behaviors,Current Smoker Status,Percent of adults who are current smokers,Yes,Overall,Overall,6090,12.8,11.8,13.8,%,Crude Prevalence,BRFSS
+2023,FL,Florida,Chronic Health Indicators,Obesity,Percent of adults aged 18 years and older who have obesity,Yes,Overall,Overall,5234,28.4,27.0,29.8,%,Crude Prevalence,BRFSS
+2023,FL,Florida,Chronic Health Indicators,Diabetes,Percent of adults with diabetes,Yes,Overall,Overall,5210,12.3,11.4,13.2,%,Crude Prevalence,BRFSS
+2023,FL,Florida,Health Risk Behaviors,Binge Drinking,Adults who reported binge drinking,Yes,Overall,Overall,5198,16.9,15.8,18.0,%,Crude Prevalence,BRFSS
+2023,WA,Washington,Chronic Health Indicators,Obesity,Percent of adults aged 18 years and older who have obesity,Yes,Overall,Overall,4102,28.7,27.1,30.3,%,Crude Prevalence,BRFSS
+2023,WA,Washington,Chronic Health Indicators,Depression,Ever told you that you have a form of depression,Yes,Overall,Overall,4089,21.9,20.5,23.3,%,Crude Prevalence,BRFSS
+2023,CO,Colorado,Chronic Health Indicators,Obesity,Percent of adults aged 18 years and older who have obesity,Yes,Overall,Overall,4567,23.8,22.4,25.2,%,Crude Prevalence,BRFSS
+2023,CO,Colorado,Health Risk Behaviors,Exercise,Adults who participated in any physical activities,Yes,Overall,Overall,4534,82.5,81.0,84.0,%,Crude Prevalence,BRFSS
