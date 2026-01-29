@@ -19,8 +19,32 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 # Ensure upload folder exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-# In-memory storage for submissions (in production, use a database)
+# File-based storage for submissions (survives server restarts)
+SUBMISSIONS_FILE = 'submissions_data.json'
 submissions = {}
+
+def save_submissions():
+    """Save submissions to JSON file for persistence."""
+    try:
+        with open(SUBMISSIONS_FILE, 'w') as f:
+            json.dump(submissions, f)
+    except Exception as e:
+        print(f"Error saving submissions: {e}")
+
+def load_submissions():
+    """Load submissions from JSON file on startup."""
+    global submissions
+    try:
+        if os.path.exists(SUBMISSIONS_FILE):
+            with open(SUBMISSIONS_FILE, 'r') as f:
+                submissions = json.load(f)
+                print(f"Loaded {len(submissions)} submissions from file")
+    except Exception as e:
+        print(f"Error loading submissions: {e}")
+        submissions = {}
+
+# Load existing submissions on startup
+load_submissions()
 
 # =============================================================================
 # BRFSS Data Validation Rules (based on 2023 CDC BRFSS Questionnaire)
@@ -954,8 +978,9 @@ def submit():
                     result.status = 'failed'
                     result.add_error(0, 'file', f'Failed to parse file: {str(e)}')
 
-                # Store result
+                # Store result and save to file
                 submissions[submission_id] = result.to_dict()
+                save_submissions()
 
                 message = f"File submitted successfully! Submission ID: {submission_id}"
                 return redirect(url_for('validation_detail', submission_id=submission_id))
@@ -1049,6 +1074,7 @@ def api_submit():
         result.add_error(0, 'file', f'Failed to parse file: {str(e)}')
 
     submissions[submission_id] = result.to_dict()
+    save_submissions()
 
     return jsonify(result.to_dict())
 
@@ -1065,6 +1091,7 @@ def api_clear():
         return jsonify({'error': 'Invalid password'}), 401
 
     submissions.clear()
+    save_submissions()
     return jsonify({'status': 'cleared', 'message': 'All submissions have been cleared'})
 
 

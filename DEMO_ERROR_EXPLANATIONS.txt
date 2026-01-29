@@ -1,0 +1,325 @@
+================================================================================
+BRFSS VALIDATION DEMO - ERROR EXPLANATIONS
+================================================================================
+
+This document explains each test file that was designed to fail validation,
+showing exactly what's wrong and what the correct values should be.
+
+
+================================================================================
+1. TEXAS (TX_submission_2023.csv) - INVALID STATE FIPS CODES
+================================================================================
+
+WHAT'S WRONG:
+The _STATE column contains FIPS codes that don't exist.
+
+ERRORS IN FILE:
+  Row 2:  _STATE = 99  ← Invalid (no state has FIPS 99)
+  Row 4:  _STATE = 99  ← Invalid
+  Row 5:  _STATE = 75  ← Invalid (no state has FIPS 75)
+  Row 7:  _STATE = 99  ← Invalid
+  Row 9:  _STATE = 75  ← Invalid
+
+WHAT IT SHOULD BE:
+  Texas FIPS code = 48
+
+  Row 2:  _STATE = 48  ← Correct
+  Row 4:  _STATE = 48  ← Correct
+  Row 5:  _STATE = 48  ← Correct
+  Row 7:  _STATE = 48  ← Correct
+  Row 9:  _STATE = 48  ← Correct
+
+WHY THIS MATTERS:
+FIPS codes are standardized federal codes for states. Using invalid codes
+means the data can't be properly attributed to any real state, making it
+useless for geographic analysis.
+
+VALIDATION RESULT: Passed with Errors (50% error rate)
+
+
+================================================================================
+2. NEW YORK (NY_submission_2023.csv) - DAYS VALUES OUT OF RANGE
+================================================================================
+
+WHAT'S WRONG:
+The PHYSHLTH (Physical Health Days) and MENTHLTH (Mental Health Days) columns
+contain values greater than 30. These fields ask "how many days in the past 30
+days" so values cannot exceed 30.
+
+ERRORS IN FILE:
+  Row 2:  PHYSHLTH = 45  ← Invalid (max is 30)
+  Row 3:  PHYSHLTH = 50  ← Invalid
+  Row 4:  PHYSHLTH = 60  ← Invalid
+  Row 5:  PHYSHLTH = 35  ← Invalid
+  Row 6:  PHYSHLTH = 42  ← Invalid
+  Row 7:  MENTHLTH = 55  ← Invalid
+  Row 8:  MENTHLTH = 40  ← Invalid
+  Row 10: PHYSHLTH = 38, MENTHLTH = 45  ← Both invalid
+
+WHAT IT SHOULD BE:
+  Valid range: 0-30, or special codes 77 (Don't Know), 88 (None), 99 (Refused)
+
+  Row 2:  PHYSHLTH = 30  ← Maximum valid value
+  Row 3:  PHYSHLTH = 30  ← Maximum valid value
+  Row 7:  MENTHLTH = 30  ← Maximum valid value
+
+WHY THIS MATTERS:
+The question asks about the past 30 days, so mathematically a person cannot
+have more than 30 days of poor health in a 30-day period. Values like 45 or
+60 are impossible and indicate data entry errors.
+
+VALIDATION RESULT: Failed (>50% error rate)
+
+
+================================================================================
+3. OHIO (OH_submission_2023.csv) - INVALID ALCOHOL CONSUMPTION CODES
+================================================================================
+
+WHAT'S WRONG:
+The ALCDAY4 (Alcohol Days per Month) column uses an invalid coding scheme.
+
+BRFSS uses a special format for alcohol consumption:
+  - 101-199 = Days per WEEK (e.g., 103 = 3 days per week)
+  - 201-299 = Days per MONTH (e.g., 215 = 15 days per month)
+  - 777 = Don't know
+  - 888 = No drinks in past 30 days
+  - 999 = Refused
+
+ERRORS IN FILE:
+  Row 2:  ALCDAY4 = 350  ← Invalid (not in any valid range)
+  Row 3:  ALCDAY4 = 450  ← Invalid
+  Row 4:  ALCDAY4 = 500  ← Invalid
+  Row 6:  ALCDAY4 = 600  ← Invalid
+  Row 8:  ALCDAY4 = 750  ← Invalid
+  Row 10: ALCDAY4 = 400  ← Invalid
+
+WHAT IT SHOULD BE:
+  Row 2:  ALCDAY4 = 103  ← 3 days per week
+  Row 3:  ALCDAY4 = 215  ← 15 days per month
+  Row 4:  ALCDAY4 = 888  ← No drinks
+  Row 6:  ALCDAY4 = 202  ← 2 days per month
+
+WHY THIS MATTERS:
+The special coding scheme allows distinguishing between frequent drinkers
+(measured in days per week) and occasional drinkers (measured in days per
+month). Codes like 350 or 500 don't fit either category and can't be
+interpreted.
+
+VALIDATION RESULT: Failed (>50% error rate)
+
+
+================================================================================
+4. MICHIGAN (MI_submission_2023.csv) - TEXT IN NUMERIC FIELDS
+================================================================================
+
+WHAT'S WRONG:
+Several numeric fields contain text values instead of numbers. This is a
+common data entry error when someone types descriptions instead of codes.
+
+ERRORS IN FILE:
+  Row 2:  GENHLTH = "good"       ← Should be numeric code
+  Row 3:  PHYSHLTH = "ten"       ← Should be numeric
+  Row 4:  MENTHLTH = "five"      ← Should be numeric
+  Row 5:  GENHLTH = "fair"       ← Should be numeric code
+  Row 6:  PHYSHLTH = "N/A"       ← Should be numeric or blank
+  Row 8:  GENHLTH = "excellent"  ← Should be numeric code
+  Row 9:  PHYSHLTH = "#REF!"     ← Excel error carried over
+  Row 10: MENTHLTH = "abc"       ← Random text
+  Row 11: GENHLTH = "poor"       ← Should be numeric code
+
+WHAT IT SHOULD BE:
+  GENHLTH uses codes 1-5:
+    1 = Excellent
+    2 = Very Good
+    3 = Good
+    4 = Fair
+    5 = Poor
+
+  Row 2:  GENHLTH = 3   ← Code for "Good"
+  Row 5:  GENHLTH = 4   ← Code for "Fair"
+  Row 8:  GENHLTH = 1   ← Code for "Excellent"
+  Row 11: GENHLTH = 5   ← Code for "Poor"
+
+  PHYSHLTH and MENTHLTH use actual day counts (0-30):
+  Row 3:  PHYSHLTH = 10  ← Numeric value
+  Row 4:  MENTHLTH = 5   ← Numeric value
+
+WHY THIS MATTERS:
+Numeric codes allow for statistical analysis and comparison across datasets.
+Text values like "good" or "N/A" can't be aggregated or analyzed without
+manual conversion, and errors like "#REF!" indicate corrupted source data.
+
+VALIDATION RESULT: Failed (>50% error rate)
+
+
+================================================================================
+5. ARIZONA (AZ_submission_2023.csv) - INVALID GENERAL HEALTH CODES
+================================================================================
+
+WHAT'S WRONG:
+The GENHLTH (General Health) column contains codes outside the valid range.
+
+Valid GENHLTH codes:
+  1 = Excellent
+  2 = Very Good
+  3 = Good
+  4 = Fair
+  5 = Poor
+  7 = Don't know / Not sure
+  9 = Refused
+
+ERRORS IN FILE:
+  Row 2:  GENHLTH = 6   ← Invalid (no code 6 exists)
+  Row 3:  GENHLTH = 8   ← Invalid (no code 8 exists)
+  Row 4:  GENHLTH = 0   ← Invalid (codes start at 1)
+  Row 5:  GENHLTH = 10  ← Invalid (max valid is 9)
+  Row 6:  GENHLTH = 6   ← Invalid
+  Row 8:  GENHLTH = 8   ← Invalid
+  Row 10: GENHLTH = 0   ← Invalid
+  Row 11: GENHLTH = 10  ← Invalid
+
+WHAT IT SHOULD BE:
+  Row 2:  GENHLTH = 5  ← "Poor" if that was intended
+  Row 3:  GENHLTH = 7  ← "Don't know" if uncertain
+  Row 4:  GENHLTH = 1  ← "Excellent" (not 0)
+  Row 5:  GENHLTH = 5  ← "Poor" (closest to 10?)
+
+WHY THIS MATTERS:
+Using undefined codes makes responses uninterpretable. Code 6 doesn't map
+to any health status, so we don't know what the respondent meant. This
+corrupts the data quality.
+
+VALIDATION RESULT: Failed (>50% error rate)
+
+
+================================================================================
+6. NEVADA (NV_submission_2023.csv) - INVALID DIABETES CODES
+================================================================================
+
+WHAT'S WRONG:
+The DIABETE4 (Diabetes Status) column contains codes outside the valid range.
+
+Valid DIABETE4 codes:
+  1 = Yes
+  2 = Yes, but only during pregnancy (females)
+  3 = No
+  4 = No, pre-diabetes or borderline diabetes
+  7 = Don't know / Not sure
+  9 = Refused
+
+ERRORS IN FILE:
+  Row 2:  DIABETE4 = 5   ← Invalid (no code 5)
+  Row 3:  DIABETE4 = 6   ← Invalid (no code 6)
+  Row 4:  DIABETE4 = 8   ← Invalid (no code 8)
+  Row 5:  DIABETE4 = 5   ← Invalid
+  Row 6:  DIABETE4 = 10  ← Invalid (max valid is 9)
+  Row 8:  DIABETE4 = 6   ← Invalid
+  Row 10: DIABETE4 = 5   ← Invalid
+  Row 11: DIABETE4 = 8   ← Invalid
+
+WHAT IT SHOULD BE:
+  Row 2:  DIABETE4 = 3  ← "No" if not diabetic
+  Row 3:  DIABETE4 = 4  ← "Pre-diabetes" perhaps intended
+  Row 4:  DIABETE4 = 7  ← "Don't know" perhaps intended
+  Row 6:  DIABETE4 = 9  ← "Refused" perhaps intended
+
+WHY THIS MATTERS:
+Diabetes status is critical health data. Invalid codes mean we can't
+determine if someone is diabetic, pre-diabetic, or healthy. This affects
+prevalence calculations and public health planning.
+
+VALIDATION RESULT: Failed (>50% error rate)
+
+
+================================================================================
+7. ILLINOIS (IL_submission_2023.csv) - INVALID SEATBELT CODES
+================================================================================
+
+WHAT'S WRONG:
+The SEATBELT (Seatbelt Use) column contains codes outside the valid range.
+
+Valid SEATBELT codes:
+  1 = Always
+  2 = Nearly always
+  3 = Sometimes
+  4 = Seldom
+  5 = Never
+  7 = Don't know / Not sure
+  8 = Never drive or ride in a car
+  9 = Refused
+
+ERRORS IN FILE:
+  Row 2:  SEATBELT = 10  ← Invalid (max valid is 9)
+  Row 3:  SEATBELT = 15  ← Invalid
+  Row 4:  SEATBELT = 0   ← Invalid (codes start at 1)
+  Row 5:  SEATBELT = 6   ← Invalid (no code 6 exists)
+  Row 6:  SEATBELT = 20  ← Invalid
+  Row 8:  SEATBELT = 12  ← Invalid
+  Row 10: SEATBELT = 25  ← Invalid
+
+WHAT IT SHOULD BE:
+  Row 2:  SEATBELT = 1  ← "Always" perhaps intended
+  Row 3:  SEATBELT = 1  ← "Always"
+  Row 4:  SEATBELT = 5  ← "Never" (not 0)
+  Row 5:  SEATBELT = 5  ← "Never" perhaps (closest to 6)
+
+WHY THIS MATTERS:
+Seatbelt usage is a key safety indicator tracked by public health agencies.
+Invalid codes make it impossible to calculate accurate usage rates or
+identify populations at risk.
+
+VALIDATION RESULT: Failed (>50% error rate)
+
+
+================================================================================
+8. CALIFORNIA (CA_submission_2023.csv) - MIXED ERRORS (Pre-existing)
+================================================================================
+
+This file contains a mix of various error types that were already present:
+
+  - GENHLTH = 8 (invalid code)
+  - PHYSHLTH = 45 (exceeds 30-day maximum)
+  - MENTHLTH = "abc" (text in numeric field)
+  - BPHIGH6 = 6 (invalid blood pressure code)
+
+This demonstrates how real-world data often has multiple types of errors
+mixed together.
+
+VALIDATION RESULT: Varies based on error density
+
+
+================================================================================
+SUMMARY TABLE
+================================================================================
+
+State   | Error Type              | Invalid Values    | Should Be
+--------|-------------------------|-------------------|------------------
+TX      | Invalid FIPS codes      | 99, 75            | 48
+NY      | Days out of range       | 45, 50, 60        | 0-30
+OH      | Invalid alcohol codes   | 350, 450, 500     | 101-199 or 201-299
+MI      | Text in numeric fields  | "good", "N/A"     | Numeric codes
+AZ      | Invalid GENHLTH codes   | 0, 6, 8, 10       | 1-5, 7, 9
+NV      | Invalid DIABETE4 codes  | 5, 6, 8, 10       | 1-4, 7, 9
+IL      | Invalid SEATBELT codes  | 0, 6, 10, 15, 20  | 1-5, 7-9
+
+
+================================================================================
+FILES THAT PASS VALIDATION
+================================================================================
+
+FL (Florida) - FL_submission_2023.csv
+  All values are within valid ranges
+  All codes are recognized
+  No text in numeric fields
+
+GA (Georgia) - GA_submission_2023.csv
+  All values are within valid ranges
+  All codes are recognized
+  No text in numeric fields
+
+These serve as examples of correctly formatted BRFSS data.
+
+
+================================================================================
+END OF DOCUMENT
+================================================================================
