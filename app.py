@@ -1055,7 +1055,15 @@ def api_submit():
 
 @app.route('/api/clear', methods=['POST'])
 def api_clear():
-    """Clear all submissions data."""
+    """Clear all submissions data. Requires password."""
+    CLEAR_PASSWORD = "brfss2024"  # Simple password for demo
+
+    data = request.get_json() or {}
+    password = data.get('password', '')
+
+    if password != CLEAR_PASSWORD:
+        return jsonify({'error': 'Invalid password'}), 401
+
     submissions.clear()
     return jsonify({'status': 'cleared', 'message': 'All submissions have been cleared'})
 
