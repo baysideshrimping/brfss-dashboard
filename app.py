@@ -842,8 +842,12 @@ def validate_brfss_data(df, result):
     df.columns = df.columns.str.lower().str.strip()
 
     # Apply column name mapping to support various CDC data formats
+    # BUT skip columns starting with underscore (like _state, _psu) - those are raw BRFSS fields
     rename_map = {}
     for col in df.columns:
+        # Skip raw BRFSS columns that start with underscore
+        if col.startswith('_'):
+            continue
         # Remove underscores for matching
         col_normalized = col.replace('_', '')
         if col_normalized in COLUMN_NAME_MAPPING:
