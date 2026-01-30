@@ -93,8 +93,9 @@
         }
 
         .stat-card.passed .value { color: #28a745; }
+        .stat-card.with-warnings .value { color: #17a2b8; }
+        .stat-card.with-errors .value { color: #ffc107; }
         .stat-card.failed .value { color: #dc3545; }
-        .stat-card.warnings .value { color: #ffc107; }
 
         .section {
             background: white;
@@ -154,6 +155,11 @@
         .status-badge.passed_with_errors {
             background: #fff3cd;
             color: #856404;
+        }
+
+        .status-badge.passed_with_warnings {
+            background: #d1ecf1;
+            color: #0c5460;
         }
 
         .status-badge.pending {
@@ -302,13 +308,17 @@
                 <div class="value">{{ summary.passed }}</div>
                 <div class="label">Passed</div>
             </div>
+            <div class="stat-card with-warnings">
+                <div class="value">{{ summary.passed_with_warnings }}</div>
+                <div class="label">With Warnings</div>
+            </div>
+            <div class="stat-card with-errors">
+                <div class="value">{{ summary.passed_with_errors }}</div>
+                <div class="label">With Errors</div>
+            </div>
             <div class="stat-card failed">
                 <div class="value">{{ summary.failed }}</div>
                 <div class="label">Failed</div>
-            </div>
-            <div class="stat-card warnings">
-                <div class="value">{{ summary.passed_with_errors }}</div>
-                <div class="label">With Warnings</div>
             </div>
             <div class="stat-card">
                 <div class="value">{{ summary.total_errors }}</div>
