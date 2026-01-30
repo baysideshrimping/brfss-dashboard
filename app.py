@@ -399,6 +399,9 @@ VALID_TOPICS = [
     'Annual Checkup', 'Routine Checkup', 'No Leisure Time Physical Activity'
 ]
 
+# Lowercase lookup for case-insensitive topic matching
+VALID_TOPICS_LOWER = {t.lower(): t for t in VALID_TOPICS}
+
 VALID_RESPONSES = [
     'Yes', 'No', 'Overall', 'Male', 'Female',
     'Excellent', 'Very Good', 'Good', 'Fair', 'Poor',
@@ -562,37 +565,60 @@ def validate_response_code(value, valid_responses, question_code):
     try:
         val = int(float(value))
     except (ValueError, TypeError):
-        return False, f"Non-numeric response: '{value}'"
+        return False, f"Non-numeric response: '{value}'. Expected a number code."
+
+    # Common BRFSS response code meanings for better error messages
+    YES_NO_CODES = "1=Yes, 2=No, 7=Don't know, 9=Refused"
+    HEALTH_CODES = "1=Excellent, 2=Very good, 3=Good, 4=Fair, 5=Poor, 7=Don't know, 9=Refused"
 
     if isinstance(valid_responses, list):
         if val not in valid_responses:
-            return False, f"Invalid response code {val} (valid: {valid_responses[:5]}...)"
+            # Provide helpful context based on response pattern
+            if valid_responses == [1, 2, 7, 9]:
+                hint = f"Valid codes: {YES_NO_CODES}"
+            elif valid_responses == [1, 2, 3, 4, 5, 7, 9]:
+                hint = f"Valid codes: {HEALTH_CODES}"
+            elif valid_responses == [1, 2, 3, 4, 7, 9]:
+                hint = "Valid codes: 1-4 (response options), 7=Don't know, 9=Refused"
+            elif len(valid_responses) <= 10:
+                hint = f"Valid codes: {valid_responses}"
+            else:
+                hint = f"Valid codes: {valid_responses[:8]}... (see BRFSS codebook)"
+            return False, f"Invalid code {val}. {hint}"
+
     elif valid_responses == 'days_0_30':
         if not (0 <= val <= 30 or val in [77, 88, 99]):
-            return False, f"Invalid days value {val} (expected 0-30, 77, 88, or 99)"
+            return False, f"Invalid days value {val}. Expected: 0-30 (number of days), 77=Don't know, 88=None, 99=Refused"
+
     elif valid_responses == 'days_1_30':
         if not (1 <= val <= 30 or val in [77, 88, 99]):
-            return False, f"Invalid days value {val} (expected 1-30, 77, 88, or 99)"
+            return False, f"Invalid days value {val}. Expected: 1-30 (number of days), 77=Don't know, 88=None, 99=Refused"
+
     elif valid_responses == 'age':
         if not (18 <= val <= 97 or val in [7, 9, 98, 99]):
-            return False, f"Invalid age {val} (expected 18-97 or special codes)"
+            return False, f"Invalid age {val}. Expected: 18-97 (age in years), 7=Don't know, 9=Refused, 98=Don't know/Not sure, 99=Refused"
+
     elif valid_responses == 'count_0_76':
         if not (0 <= val <= 76 or val in [77, 88, 99]):
-            return False, f"Invalid count {val}"
+            return False, f"Invalid count {val}. Expected: 0-76 (actual count), 77=Don't know, 88=None, 99=Refused"
+
     elif valid_responses == 'count_0_87':
         if not (0 <= val <= 87 or val in [88, 99]):
-            return False, f"Invalid count {val}"
+            return False, f"Invalid count {val}. Expected: 0-87 (actual count), 88=None/Don't know, 99=Refused"
+
     elif valid_responses == 'drinks':
-        if not (1 <= val <= 76 or val in [77, 88, 99]):  # 88 = None/Don't drink
-            return False, f"Invalid drinks value {val}"
+        if not (1 <= val <= 76 or val in [77, 88, 99]):
+            return False, f"Invalid drinks value {val}. Expected: 1-76 (number of drinks), 77=Don't know, 88=None/Don't drink, 99=Refused"
+
     elif valid_responses == 'diabetes_age':
-        # Age when first told you have diabetes - can be any age 1-97
-        if not (1 <= val <= 97 or val in [98, 99]):  # 98 = Don't know, 99 = Refused
-            return False, f"Invalid diabetes age {val}"
+        if not (1 <= val <= 97 or val in [98, 99]):
+            return False, f"Invalid diabetes age {val}. Expected: 1-97 (age first diagnosed), 98=Don't know, 99=Refused"
+
     elif valid_responses == 'alcohol_days':
         # ALCDAY4 format: 1xx = days per week, 2xx = days per month
         if not (101 <= val <= 199 or 201 <= val <= 299 or val in [777, 888, 999]):
-            return False, f"Invalid alcohol days code {val}"
+            return False, (f"Invalid alcohol days code {val}. Expected: 101-107 (days per week, e.g., 103=3 days/week), "
+                          f"201-230 (days per month, e.g., 215=15 days/month), 777=Don't know, 888=No drinks, 999=Refused")
 
     return True, None
 
@@ -614,9 +640,14 @@ def validate_raw_survey_data(df, result):
                 try:
                     state_fips = int(float(state_val))
                     if state_fips not in STATE_FIPS_CODES:
-                        result.add_error(row_num, '_state', f"Invalid state FIPS code: {state_fips}")
+                        # Suggest nearby valid codes
+                        nearby = [f for f in STATE_FIPS_CODES.keys() if abs(f - state_fips) <= 5]
+                        hint = f" Nearby valid codes: {nearby[:3]}" if nearby else ""
+                        result.add_error(row_num, '_state',
+                            f"Invalid state FIPS code: {state_fips}. Valid range is 1-56 (states), 66 (Guam), 72 (Puerto Rico), 78 (Virgin Islands).{hint}")
                 except (ValueError, TypeError):
-                    result.add_error(row_num, '_state', f"Non-numeric state code: '{state_val}'")
+                    result.add_error(row_num, '_state',
+                        f"Non-numeric state code: '{state_val}'. Expected a FIPS code number (e.g., 6 for California, 36 for New York).")
 
     # Build list of columns to validate
     # Check both BRFSS_VARIABLE_CODES (actual data file names) and BRFSS_QUESTION_CODES
@@ -690,29 +721,36 @@ def validate_aggregated_data(df, result):
         # Validate year
         year = row.get('year')
         if pd.isna(year) or str(year).strip() == '':
-            result.add_error(row_num, 'year', 'Year is required')
+            result.add_error(row_num, 'year', 'Year is required. Use a 4-digit year (e.g., 2023).')
             row_valid = False
         else:
             try:
                 year_int = int(float(year))
                 if year_int < 1984:
-                    result.add_error(row_num, 'year', f"Year {year_int} is before BRFSS started (1984)")
+                    result.add_error(row_num, 'year',
+                        f"Year {year_int} is before BRFSS started. The BRFSS survey began in 1984.")
                     row_valid = False
                 elif year_int > 2026:
-                    result.add_warning(row_num, 'year', f"Future year: {year_int}")
+                    result.add_warning(row_num, 'year', f"Future year {year_int} - verify this is correct.")
             except (ValueError, TypeError):
-                result.add_error(row_num, 'year', f"Invalid year format: '{year}'")
+                result.add_error(row_num, 'year',
+                    f"Invalid year format: '{year}'. Expected a 4-digit year (e.g., 2023).")
                 row_valid = False
 
         # Validate locationabbr (state abbreviation)
         loc_abbr = row.get('locationabbr')
         if pd.isna(loc_abbr) or str(loc_abbr).strip() == '':
-            result.add_error(row_num, 'locationabbr', 'State abbreviation is required')
+            result.add_error(row_num, 'locationabbr',
+                'State abbreviation is required. Use 2-letter state code (e.g., CA, NY, TX).')
             row_valid = False
         else:
             loc_abbr_clean = str(loc_abbr).strip().upper()
             if loc_abbr_clean not in VALID_STATE_ABBRS:
-                result.add_error(row_num, 'locationabbr', f"Invalid state abbreviation: '{loc_abbr}'")
+                # Suggest similar abbreviations
+                similar = [a for a in VALID_STATE_ABBRS.keys() if a[0] == loc_abbr_clean[0:1]][:5]
+                hint = f" States starting with '{loc_abbr_clean[0:1]}': {similar}" if similar else ""
+                result.add_error(row_num, 'locationabbr',
+                    f"Invalid state abbreviation: '{loc_abbr}'.{hint}")
                 row_valid = False
             else:
                 # Cross-validate with locationdesc
@@ -737,13 +775,22 @@ def validate_aggregated_data(df, result):
                 if str(class_val).strip() not in VALID_CLASSES:
                     result.add_warning(row_num, 'class', f"Unrecognized class: '{class_val}'")
 
-        # Validate topic
+        # Validate topic (case-insensitive, whitespace-tolerant)
         topic = row.get('topic')
         if pd.isna(topic) or str(topic).strip() == '':
             result.add_error(row_num, 'topic', 'Topic is required')
             row_valid = False
-        elif str(topic).strip() not in VALID_TOPICS:
-            result.add_warning(row_num, 'topic', f"Unrecognized topic: '{topic}'")
+        else:
+            topic_clean = str(topic).strip().lower()
+            if topic_clean not in VALID_TOPICS_LOWER:
+                # Suggest similar topics if possible
+                similar = [t for t in VALID_TOPICS if topic_clean in t.lower() or t.lower() in topic_clean]
+                if similar:
+                    result.add_warning(row_num, 'topic',
+                        f"Unrecognized topic: '{topic}'. Did you mean: {', '.join(similar[:3])}?")
+                else:
+                    result.add_warning(row_num, 'topic',
+                        f"Unrecognized topic: '{topic}'. See BRFSS documentation for valid topics.")
 
         # Validate question
         question = row.get('question')
@@ -755,13 +802,15 @@ def validate_aggregated_data(df, result):
         data_value = row.get('data_value')
         data_val_float = None
         if pd.isna(data_value) or str(data_value).strip() == '':
-            result.add_error(row_num, 'data_value', 'Data value is required')
+            result.add_error(row_num, 'data_value',
+                'Data value is required. Enter the prevalence percentage (e.g., 25.5 for 25.5%).')
             row_valid = False
         else:
             try:
                 data_val_float = float(data_value)
                 if data_val_float < 0:
-                    result.add_error(row_num, 'data_value', f"Negative value not allowed: {data_val_float}")
+                    result.add_error(row_num, 'data_value',
+                        f"Negative value not allowed: {data_val_float}. Prevalence must be 0 or greater.")
                     row_valid = False
                 elif data_val_float > 100:
                     # Check data_value_type - some types can exceed 100
@@ -771,10 +820,12 @@ def validate_aggregated_data(df, result):
                     elif pd.notna(dv_type) and 'Rate' in str(dv_type):
                         pass  # Rates can exceed 100
                     else:
-                        result.add_error(row_num, 'data_value', f"Percentage exceeds 100%: {data_val_float}")
+                        result.add_error(row_num, 'data_value',
+                            f"Percentage {data_val_float}% exceeds 100%. If this is a count or rate, set data_value_type to 'Number' or 'Rate'.")
                         row_valid = False
             except (ValueError, TypeError):
-                result.add_error(row_num, 'data_value', f"Invalid numeric value: '{data_value}'")
+                result.add_error(row_num, 'data_value',
+                    f"Invalid numeric value: '{data_value}'. Expected a number (e.g., 25.5).")
                 row_valid = False
 
         # Validate sample_size if present
@@ -784,15 +835,19 @@ def validate_aggregated_data(df, result):
                 try:
                     sample_int = int(float(sample))
                     if sample_int < 0:
-                        result.add_error(row_num, 'sample_size', f"Negative sample size: {sample_int}")
+                        result.add_error(row_num, 'sample_size',
+                            f"Negative sample size: {sample_int}. Sample size must be a positive integer.")
                         row_valid = False
                     elif sample_int < 10:
-                        result.add_error(row_num, 'sample_size', f"Sample size too small for reliable estimates: {sample_int}")
+                        result.add_error(row_num, 'sample_size',
+                            f"Sample size {sample_int} is too small for reliable estimates. BRFSS typically requires n >= 10.")
                         row_valid = False
                     elif sample_int < 50:
-                        result.add_warning(row_num, 'sample_size', f"Small sample size may have wide confidence intervals: {sample_int}")
+                        result.add_warning(row_num, 'sample_size',
+                            f"Small sample size (n={sample_int}) may produce wide confidence intervals. Consider if estimate is reliable.")
                 except (ValueError, TypeError):
-                    result.add_error(row_num, 'sample_size', f"Invalid sample size: '{sample}'")
+                    result.add_error(row_num, 'sample_size',
+                        f"Invalid sample size: '{sample}'. Expected a positive integer.")
                     row_valid = False
 
         # Validate confidence limits
@@ -804,19 +859,22 @@ def validate_aggregated_data(df, result):
                     low = float(cl_low)
                     high = float(cl_high)
                     if low > high:
-                        result.add_error(row_num, 'confidence_limit', f"Low CI ({low}) > High CI ({high})")
+                        result.add_error(row_num, 'confidence_limit',
+                            f"Confidence limits are inverted: low ({low}) > high ({high}). Swap the values or verify source data.")
                         row_valid = False
                     # Validate that data_value is within CI
                     if data_val_float is not None:
                         if data_val_float < low or data_val_float > high:
                             result.add_error(row_num, 'confidence_limit',
-                                f"Data value ({data_val_float}) outside confidence interval [{low}, {high}]")
+                                f"Data value ({data_val_float}%) is outside its confidence interval [{low}, {high}]. "
+                                f"The point estimate should fall within the CI bounds.")
                             row_valid = False
                         # Check for suspiciously wide CI
                         ci_width = high - low
                         if ci_width > 30:
                             result.add_warning(row_num, 'confidence_limit',
-                                f"Very wide confidence interval ({ci_width:.1f}%), may indicate unreliable estimate")
+                                f"Wide confidence interval ({ci_width:.1f} percentage points). "
+                                f"This may indicate small sample size or high variability.")
                 except (ValueError, TypeError):
                     pass
 
