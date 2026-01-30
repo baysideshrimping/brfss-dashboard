@@ -1025,20 +1025,13 @@ def validate_brfss_data(df, result):
     else:
         result.data_summary = {'format': data_format}
 
-    # Determine final status
-    if len(result.errors) == 0:
-        if len(result.warnings) > 0:
-            result.status = 'passed_with_warnings'
-            result.add_info(f"Validation passed with {len(result.warnings)} warning(s). Review warnings below.")
-        else:
-            result.status = 'passed'
-            result.add_info("All validation checks passed!")
-    elif len(result.errors) > result.row_count * 0.5:
-        result.status = 'failed'
-        result.add_info(f"Validation failed: {len(result.errors)} errors in {result.row_count} rows")
+    # Determine final status - simple pass/fail
+    if len(result.errors) == 0 and len(result.warnings) == 0:
+        result.status = 'passed'
+        result.add_info("All validation checks passed!")
     else:
-        result.status = 'passed_with_errors'
-        result.add_info(f"Validation completed with {len(result.errors)} errors and {len(result.warnings)} warnings")
+        result.status = 'failed'
+        result.add_info(f"Validation failed: {len(result.errors)} error(s), {len(result.warnings)} warning(s)")
 
     return result
 
@@ -1121,8 +1114,6 @@ def validation_dashboard():
     total = len(submissions)
     passed = sum(1 for s in submissions.values() if s['status'] == 'passed')
     failed = sum(1 for s in submissions.values() if s['status'] == 'failed')
-    with_warnings = sum(1 for s in submissions.values() if s['status'] == 'passed_with_warnings')
-    with_errors = sum(1 for s in submissions.values() if s['status'] == 'passed_with_errors')
 
     total_errors = sum(s['error_count'] for s in submissions.values())
     total_warnings = sum(s['warning_count'] for s in submissions.values())
@@ -1131,8 +1122,6 @@ def validation_dashboard():
         'total_submissions': total,
         'passed': passed,
         'failed': failed,
-        'passed_with_warnings': with_warnings,
-        'passed_with_errors': with_errors,
         'total_errors': total_errors,
         'total_warnings': total_warnings,
         'pass_rate': round(passed / total * 100, 1) if total > 0 else 0
@@ -1298,8 +1287,6 @@ def state_map():
                          state_details=state_details,
                          total_states=len(state_status),
                          passed=sum(1 for s in state_status.values() if s == 'passed'),
-                         passed_with_warnings=sum(1 for s in state_status.values() if s == 'passed_with_warnings'),
-                         passed_with_errors=sum(1 for s in state_status.values() if s == 'passed_with_errors'),
                          failed=sum(1 for s in state_status.values() if s == 'failed'))
 
 

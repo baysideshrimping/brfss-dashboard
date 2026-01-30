@@ -64,15 +64,11 @@
         .state { fill: #d1d5db; stroke: #fff; stroke-width: 1; cursor: pointer; transition: all 0.2s; }
         .state:hover { opacity: 0.8; stroke-width: 2; stroke: #1e3a5f; }
         .state.passed { fill: #22c55e; }
-        .state.passed_with_warnings { fill: #17a2b8; }
-        .state.passed_with_errors { fill: #f59e0b; }
         .state.failed { fill: #ef4444; }
         .legend { display: flex; gap: 30px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
         .legend-item { display: flex; align-items: center; gap: 8px; }
         .legend-color { width: 20px; height: 20px; border-radius: 4px; }
         .legend-color.passed { background: #22c55e; }
-        .legend-color.with-warnings { background: #17a2b8; }
-        .legend-color.with-errors { background: #f59e0b; }
         .legend-color.failed { background: #ef4444; }
         .legend-color.pending { background: #d1d5db; }
         .tooltip {
@@ -115,8 +111,6 @@
         }
         .state-badge { width: 12px; height: 12px; border-radius: 50%; }
         .state-badge.passed { background: #22c55e; }
-        .state-badge.passed_with_warnings { background: #17a2b8; }
-        .state-badge.passed_with_errors { background: #f59e0b; }
         .state-badge.failed { background: #ef4444; }
         .upload-prompt { text-align: center; padding: 40px; color: #666; }
         .upload-prompt a { color: #1e3a5f; }
@@ -192,8 +186,6 @@
             <div class="tooltip" id="tooltip"></div>
             <div class="legend">
                 <div class="legend-item"><div class="legend-color passed"></div><span>Passed</span></div>
-                <div class="legend-item"><div class="legend-color with-warnings"></div><span>Passed with Warnings</span></div>
-                <div class="legend-item"><div class="legend-color with-errors"></div><span>Passed with Errors</span></div>
                 <div class="legend-item"><div class="legend-color failed"></div><span>Failed</span></div>
                 <div class="legend-item"><div class="legend-color pending"></div><span>No Submission</span></div>
             </div>
@@ -211,8 +203,6 @@
             <div class="filter-bar">
                 <button class="filter-btn active" onclick="filterStates('all')">All ({{ total_states }})</button>
                 <button class="filter-btn" onclick="filterStates('passed')">Passed ({{ passed }})</button>
-                <button class="filter-btn" onclick="filterStates('passed_with_warnings')">With Warnings ({{ passed_with_warnings }})</button>
-                <button class="filter-btn" onclick="filterStates('passed_with_errors')">With Errors ({{ passed_with_errors }})</button>
                 <button class="filter-btn" onclick="filterStates('failed')">Failed ({{ failed }})</button>
             </div>
             <div class="state-grid" id="state-grid">
@@ -325,7 +315,7 @@
                     Object.entries(data).forEach(([abbr, details]) => {
                         const el = document.getElementById(abbr);
                         if (el) {
-                            el.classList.remove('passed', 'passed_with_warnings', 'failed', 'passed_with_errors');
+                            el.classList.remove('passed', 'failed');
                             el.classList.add(details.status);
                         }
                     });
