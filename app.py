@@ -970,15 +970,19 @@ def validate_aggregated_data(df, result):
                         f"Invalid numeric value: '{data_value}'. Expected a number (e.g., 25.5).")
                     row_valid = False
 
-        # Validate sample_size if present
+        # Validate sample_size (required)
         if 'sample_size' in df.columns:
             sample = row.get('sample_size')
-            if pd.notna(sample) and str(sample).strip() != '':
+            if pd.isna(sample) or str(sample).strip() == '':
+                result.add_error(row_num, 'sample_size',
+                    'Sample size is required. Enter the number of respondents (e.g., 1500).')
+                row_valid = False
+            else:
                 sample_str = str(sample).strip()
                 # Check for text placeholders
                 if sample_str.lower() in invalid_text_patterns:
                     result.add_error(row_num, 'sample_size',
-                        f"Text value '{sample_str}' in sample_size. Use empty cell for missing data.")
+                        f"Text value '{sample_str}' in sample_size. Enter a number or leave empty if truly unknown.")
                     row_valid = False
                 # Check for thousands separator
                 elif ',' in sample_str:
@@ -1004,11 +1008,26 @@ def validate_aggregated_data(df, result):
                             f"Invalid sample size: '{sample}'. Expected a positive integer.")
                         row_valid = False
 
-        # Validate confidence limits
+        # Validate confidence limits (required)
         if 'confidence_limit_low' in df.columns and 'confidence_limit_high' in df.columns:
             cl_low = row.get('confidence_limit_low')
             cl_high = row.get('confidence_limit_high')
-            if pd.notna(cl_low) and pd.notna(cl_high):
+            cl_low_missing = pd.isna(cl_low) or str(cl_low).strip() == ''
+            cl_high_missing = pd.isna(cl_high) or str(cl_high).strip() == ''
+
+            if cl_low_missing and cl_high_missing:
+                result.add_error(row_num, 'confidence_limit',
+                    'Confidence interval is required. Enter confidence_limit_low and confidence_limit_high values.')
+                row_valid = False
+            elif cl_low_missing:
+                result.add_error(row_num, 'confidence_limit_low',
+                    'Confidence limit low is required. Enter the lower bound of the 95% CI.')
+                row_valid = False
+            elif cl_high_missing:
+                result.add_error(row_num, 'confidence_limit_high',
+                    'Confidence limit high is required. Enter the upper bound of the 95% CI.')
+                row_valid = False
+            elif pd.notna(cl_low) and pd.notna(cl_high):
                 try:
                     low = float(cl_low)
                     high = float(cl_high)
@@ -1051,12 +1070,6 @@ def validate_aggregated_data(df, result):
                 except (ValueError, TypeError):
                     result.add_error(row_num, 'confidence_limit',
                         f"Invalid confidence limit values. Expected numeric values.")
-            # Check for missing CI when data_value is present
-            elif data_val_float is not None:
-                if (pd.isna(cl_low) or str(cl_low).strip() == '') and (pd.isna(cl_high) or str(cl_high).strip() == ''):
-                    result.add_error(row_num, 'confidence_limit',
-                        f"Missing confidence interval. Data value {data_val_float}% has no CI bounds. Add confidence_limit_low and confidence_limit_high.")
-                    row_valid = False
 
         # Validate break_out and break_out_category consistency
         if 'break_out' in df.columns and 'break_out_category' in df.columns:
