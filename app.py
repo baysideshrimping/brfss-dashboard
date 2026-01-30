@@ -6,6 +6,7 @@ BRFSS Data Validation System
 """
 
 import os
+import re
 import json
 import uuid
 from datetime import datetime
@@ -1009,8 +1010,10 @@ def submit():
             file = request.files['file']
             if file.filename == '':
                 error = 'No file selected'
+            elif file.filename.endswith(('.xlsx', '.xls')):
+                error = 'Excel files (.xlsx/.xls) are not supported. Please export your data as CSV first (File → Save As → CSV).'
             elif not file.filename.endswith(('.csv', '.json')):
-                error = 'Only CSV and JSON files are supported'
+                error = 'Only CSV and JSON files are supported. Please convert your file to CSV format.'
             else:
                 # Generate unique submission ID
                 submission_id = str(uuid.uuid4())[:8]
@@ -1023,6 +1026,12 @@ def submit():
                 # Create validation result
                 result = ValidationResult(submission_id, file.filename)
 
+                # Check filename convention (warning only)
+                filename_pattern = r'^[A-Z]{2}_submission_\d{4}\.csv$'
+                if not re.match(filename_pattern, file.filename):
+                    result.add_warning(0, 'filename',
+                        f"Filename '{file.filename}' doesn't match expected pattern: STATE_submission_YEAR.csv (e.g., TX_submission_2023.csv)")
+
                 # Load and validate data
                 try:
                     if file.filename.endswith('.csv'):
@@ -1030,7 +1039,15 @@ def submit():
                     else:
                         df = pd.read_json(filepath)
 
-                    validate_brfss_data(df, result)
+                    # Check for empty file
+                    if len(df) == 0:
+                        result.status = 'failed'
+                        result.add_error(0, 'file', 'File is empty. Please upload a file with data rows.')
+                    elif len(df) < 5:
+                        result.add_warning(0, 'file', f'File contains only {len(df)} rows. BRFSS submissions typically contain more data.')
+                        validate_brfss_data(df, result)
+                    else:
+                        validate_brfss_data(df, result)
 
                 except Exception as e:
                     result.status = 'failed'
@@ -1113,6 +1130,14 @@ def api_submit():
     if file.filename == '':
         return jsonify({'error': 'No file selected'}), 400
 
+    # Check for Excel files
+    if file.filename.endswith(('.xlsx', '.xls')):
+        return jsonify({'error': 'Excel files (.xlsx/.xls) are not supported. Please export your data as CSV first.'}), 400
+
+    # Check for supported file types
+    if not file.filename.endswith(('.csv', '.json')):
+        return jsonify({'error': 'Only CSV and JSON files are supported.'}), 400
+
     submission_id = str(uuid.uuid4())[:8]
     filename = f"{submission_id}_{file.filename}"
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -1120,13 +1145,27 @@ def api_submit():
 
     result = ValidationResult(submission_id, file.filename)
 
+    # Check filename convention (warning only)
+    filename_pattern = r'^[A-Z]{2}_submission_\d{4}\.csv$'
+    if not re.match(filename_pattern, file.filename):
+        result.add_warning(0, 'filename',
+            f"Filename '{file.filename}' doesn't match expected pattern: STATE_submission_YEAR.csv (e.g., TX_submission_2023.csv)")
+
     try:
         if file.filename.endswith('.csv'):
             df = pd.read_csv(filepath)
         else:
             df = pd.read_json(filepath)
 
-        validate_brfss_data(df, result)
+        # Check for empty file
+        if len(df) == 0:
+            result.status = 'failed'
+            result.add_error(0, 'file', 'File is empty. Please upload a file with data rows.')
+        elif len(df) < 5:
+            result.add_warning(0, 'file', f'File contains only {len(df)} rows. BRFSS submissions typically contain more data.')
+            validate_brfss_data(df, result)
+        else:
+            validate_brfss_data(df, result)
     except Exception as e:
         result.status = 'failed'
         result.add_error(0, 'file', f'Failed to parse file: {str(e)}')
