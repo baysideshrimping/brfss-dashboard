@@ -1367,7 +1367,7 @@ def validation_dashboard():
         submissions.values(),
         key=lambda x: x['timestamp'],
         reverse=True
-    )[:20]
+    )  # Show all submissions
 
     error_types = {}
     for sub in submissions.values():

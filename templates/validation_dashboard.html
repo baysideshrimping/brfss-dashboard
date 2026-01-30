@@ -111,6 +111,20 @@
             border-bottom: 2px solid #e0e0e0;
         }
 
+        .table-scroll {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+        }
+
+        .table-scroll thead th {
+            position: sticky;
+            top: 0;
+            background: #f8f9fa;
+            z-index: 1;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -312,8 +326,9 @@
 
         <div class="two-col">
             <div class="section">
-                <h2>Recent Submissions</h2>
+                <h2>All Submissions ({{ submissions|length }})</h2>
                 {% if submissions %}
+                <div class="table-scroll">
                 <table>
                     <thead>
                         <tr>
@@ -340,6 +355,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
                 {% else %}
                 <div class="empty-state">
                     <h3>No submissions yet</h3>
