@@ -699,11 +699,27 @@ def validate_aggregated_data(df, result):
     """
     result.add_info("Detected format: Aggregated prevalence data")
 
-    # Check for required columns
+    # Check for required columns with helpful descriptions
+    column_descriptions = {
+        'year': 'Survey year (e.g., 2023)',
+        'locationabbr': 'State abbreviation (e.g., TX, CA, NY)',
+        'locationdesc': 'State full name (e.g., Texas, California)',
+        'topic': 'Health topic category (e.g., Obesity, Diabetes, Current Smoking)',
+        'question': 'Full question text describing the measure',
+        'data_value': 'The prevalence value or percentage'
+    }
+
     missing_cols = [col for col in AGGREGATED_REQUIRED_FIELDS if col not in df.columns]
     if missing_cols:
+        present_cols = ', '.join(df.columns[:8].tolist())
+        result.add_error(0, 'columns',
+            f"Missing {len(missing_cols)} required column(s). Your file has: {present_cols}...")
+
         for col in missing_cols:
-            result.add_error(0, col, f"Required column '{col}' is missing")
+            desc = column_descriptions.get(col, 'Required field')
+            result.add_error(0, col,
+                f"Missing required column '{col}' - {desc}. Add this column to your CSV.")
+
         result.status = 'failed'
         return result
 
