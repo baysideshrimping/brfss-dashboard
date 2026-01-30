@@ -1,11 +1,8 @@
-_STATE,IYEAR,GENHLTH,PHYSHLTH,MENTHLTH,CHECKUP1,EXERANY2,BPHIGH6,CHOLCHK3,CVDINFR4,CVDSTRK3,ASTHMA3,CHCCOPD3,ADDEPEV3,DIABETE4,SMOKE100,SMOKDAY2,ALCDAY4,SEATBELT
-36,2023,2,45,10,1,1,2,2,2,2,2,2,2,3,2,9,103,1
-36,2023,3,50,5,2,1,1,3,2,2,2,2,2,3,1,2,202,1
-36,2023,1,60,0,1,1,2,2,2,2,2,2,2,3,2,9,888,1
-36,2023,2,35,8,1,1,2,2,2,2,1,2,2,3,2,9,888,1
-36,2023,4,42,10,3,2,1,4,2,2,2,1,1,1,1,1,105,2
-36,2023,2,0,55,2,1,2,3,2,2,2,2,2,3,1,3,201,1
-36,2023,3,5,40,1,1,2,4,2,2,2,2,2,3,2,9,888,1
-36,2023,4,0,0,3,2,2,2,2,2,2,2,2,3,2,9,103,1
-36,2023,2,38,45,4,1,3,2,2,2,2,2,2,3,1,2,202,1
-36,2023,3,0,5,1,1,2,2,2,2,2,2,2,3,2,9,888,1
+year,locationabbr,locationdesc,class,topic,question,response,break_out,break_out_category,sample_size,data_value,confidence_limit_low,confidence_limit_high,data_value_unit,data_value_type,datasource
+2023,NY,New York,Chronic Health Indicators,Obesity,Percent of adults with obesity,Yes,Overall,Overall,8000,28.5,26.5,30.5,%,Crude Prevalence,BRFSS
+2023,NY,New York,Chronic Health Indicators,Obesity,HTML markup <br> in question,Yes,Overall,Overall,7500,27.0,25.0,29.0,%,Crude Prevalence,BRFSS
+2023,NY,New York,Chronic Health Indicators,Obesity,This is an extremely long question text that goes on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on and on until it exceeds five hundred characters which is too long,Yes,Overall,Overall,7000,26.5,24.5,28.5,%,Crude Prevalence,BRFSS
+2023,NY,New York,Chronic Health Indicators,Obesity,Missing confidence interval,Yes,Overall,Overall,6500,25.0,,,%,Crude Prevalence,BRFSS
+year,locationabbr,locationdesc,class,topic,question,response,break_out,break_out_category,sample_size,data_value,confidence_limit_low,confidence_limit_high,data_value_unit,data_value_type,datasource
+,,,,,,,,,,,,,,,
+2023,NY,New York,Chronic Health Indicators,Obesity,Valid row after problems,Yes,Overall,Overall,6000,24.5,22.5,26.5,%,Crude Prevalence,BRFSS

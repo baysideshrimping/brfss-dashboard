@@ -1,11 +1,10 @@
-_STATE,IYEAR,GENHLTH,PHYSHLTH,MENTHLTH,CHECKUP1,EXERANY2,BPHIGH6,CHOLCHK3,CVDINFR4,CVDSTRK3,ASTHMA3,CHCCOPD3,ADDEPEV3,DIABETE4,SMOKE100,SMOKDAY2,ALCDAY4,SEATBELT
-99,2023,2,5,3,1,1,2,2,2,2,2,2,1,3,2,9,103,1
-48,2023,2,10,5,2,1,1,3,2,2,2,2,2,3,1,2,202,1
-99,2023,3,0,0,1,1,2,2,2,2,2,2,2,3,2,9,888,1
-48,2023,1,3,8,1,1,2,2,2,2,1,2,2,3,2,9,888,1
-75,2023,4,15,10,3,2,1,4,2,2,2,1,1,1,1,1,105,2
-48,2023,2,0,0,2,1,2,3,2,2,2,2,2,3,1,3,201,1
-99,2023,3,5,2,1,1,2,4,2,2,2,2,2,3,2,9,888,1
-48,2023,4,0,0,3,2,2,2,2,2,2,2,2,3,2,9,103,1
-75,2023,2,8,3,4,1,3,2,2,2,2,2,2,3,1,2,202,1
-48,2023,3,0,5,1,1,2,2,2,2,2,2,2,3,2,9,888,1
+year,locationabbr,locationdesc,class,topic,question,response,break_out,break_out_category,sample_size,data_value,confidence_limit_low,confidence_limit_high,data_value_unit,data_value_type,datasource
+2023,TX,Texas,Chronic Health Indicators,Obesity,Percent of adults with obesity,Yes,Overall,Overall,5000,32.5,30.1,34.9,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Text N/A in numeric field,Yes,Overall,Overall,N/A,25.5,23.0,28.0,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Percentage symbol in data,Yes,Overall,Overall,4500,28.5%,26.0,31.0,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Thousands separator in sample,Yes,Overall,Overall,"4,500",29.0,27.0,31.0,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Scientific notation value,Yes,Overall,Overall,4000,2.5E-1,0.1,0.4,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Zero prevalence suspicious,Yes,Overall,Overall,3500,0,0.0,0.5,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Outlier very low value,Yes,Overall,Overall,3000,0.05,0.01,0.1,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Outlier very high value,Yes,Overall,Overall,3000,98.5,97.0,99.5,%,Crude Prevalence,BRFSS
+2023,TX,Texas,Chronic Health Indicators,Obesity,Too many decimal places,Yes,Overall,Overall,4000,25.123456,23.0,27.0,%,Crude Prevalence,BRFSS

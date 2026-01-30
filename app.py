@@ -782,9 +782,24 @@ def validate_aggregated_data(df, result):
 
     valid_rows = 0
 
+    # Common text patterns that indicate missing/invalid data
+    invalid_text_patterns = ['n/a', 'na', 'null', 'none', '-', '--', '.', 'missing', 'unknown', '#n/a', '#value!', '#ref!']
+
     for idx, row in df.iterrows():
         row_num = idx + 2
         row_valid = True
+
+        # Check for empty/blank rows (all values empty or whitespace)
+        non_empty_values = [v for v in row.values if pd.notna(v) and str(v).strip() != '']
+        if len(non_empty_values) == 0:
+            result.add_error(row_num, 'row', 'Empty row detected. Remove blank rows from your data.')
+            continue  # Skip further validation for empty rows
+
+        # Check for header row repeated as data
+        row_values_lower = [str(v).lower().strip() for v in row.values if pd.notna(v)]
+        if 'year' in row_values_lower and 'locationabbr' in row_values_lower:
+            result.add_error(row_num, 'row', 'Header row appears to be duplicated as data. Remove duplicate header rows.')
+            continue
 
         # Validate year
         year = row.get('year')
@@ -865,6 +880,21 @@ def validate_aggregated_data(df, result):
         if pd.isna(question) or str(question).strip() == '':
             result.add_error(row_num, 'question', 'Question is required')
             row_valid = False
+        else:
+            question_str = str(question)
+            # Check for HTML/markup in text
+            html_patterns = ['<br>', '<p>', '</p>', '<div>', '&nbsp;', '&amp;', '&lt;', '&gt;', '<span>', '<b>', '<i>']
+            for pattern in html_patterns:
+                if pattern.lower() in question_str.lower():
+                    result.add_error(row_num, 'question',
+                        f"HTML markup '{pattern}' found in question. Remove HTML tags and use plain text.")
+                    row_valid = False
+                    break
+            # Check for very long text (likely copy-paste error)
+            if len(question_str) > 500:
+                result.add_error(row_num, 'question',
+                    f"Question text is {len(question_str)} characters (max 500). Likely copy-paste error. Use concise question text.")
+                row_valid = False
 
         # Validate data_value
         data_value = row.get('data_value')
@@ -874,49 +904,105 @@ def validate_aggregated_data(df, result):
                 'Data value is required. Enter the prevalence percentage (e.g., 25.5 for 25.5%).')
             row_valid = False
         else:
-            try:
-                data_val_float = float(data_value)
-                if data_val_float < 0:
-                    result.add_error(row_num, 'data_value',
-                        f"Negative value not allowed: {data_val_float}. Prevalence must be 0 or greater.")
-                    row_valid = False
-                elif data_val_float > 100:
-                    # Check data_value_type - some types can exceed 100
-                    dv_type = row.get('data_value_type', '')
-                    if pd.notna(dv_type) and 'Number' in str(dv_type):
-                        pass  # Numbers can exceed 100
-                    elif pd.notna(dv_type) and 'Rate' in str(dv_type):
-                        pass  # Rates can exceed 100
-                    else:
-                        result.add_error(row_num, 'data_value',
-                            f"Percentage {data_val_float}% exceeds 100%. If this is a count or rate, set data_value_type to 'Number' or 'Rate'.")
-                        row_valid = False
-            except (ValueError, TypeError):
+            data_val_str = str(data_value).strip()
+
+            # Check for text placeholders in numeric field
+            if data_val_str.lower() in invalid_text_patterns:
                 result.add_error(row_num, 'data_value',
-                    f"Invalid numeric value: '{data_value}'. Expected a number (e.g., 25.5).")
+                    f"Text value '{data_val_str}' found in numeric field. Use empty cell for missing data, not '{data_val_str}'.")
                 row_valid = False
+            # Check for percentage symbol in data
+            elif '%' in data_val_str:
+                result.add_error(row_num, 'data_value',
+                    f"Remove '%' symbol from data value '{data_val_str}'. Enter just the number (e.g., 25.5 not 25.5%).")
+                row_valid = False
+            # Check for thousands separator
+            elif ',' in data_val_str and data_val_str.replace(',', '').replace('.', '').isdigit():
+                result.add_error(row_num, 'data_value',
+                    f"Remove comma from '{data_val_str}'. Use plain number without thousands separator.")
+                row_valid = False
+            # Check for scientific notation
+            elif 'e' in data_val_str.lower() and any(c.isdigit() for c in data_val_str):
+                result.add_error(row_num, 'data_value',
+                    f"Scientific notation '{data_val_str}' detected. Convert to decimal format (e.g., 0.025 not 2.5E-2).")
+                row_valid = False
+            else:
+                try:
+                    data_val_float = float(data_value)
+                    if data_val_float < 0:
+                        result.add_error(row_num, 'data_value',
+                            f"Negative value not allowed: {data_val_float}. Prevalence must be 0 or greater.")
+                        row_valid = False
+                    elif data_val_float == 0:
+                        # Zero prevalence warning
+                        result.add_error(row_num, 'data_value',
+                            f"Zero prevalence (0%) is unusual. Verify this is correct or if data is missing.")
+                        row_valid = False
+                    elif data_val_float > 100:
+                        # Check data_value_type - some types can exceed 100
+                        dv_type = row.get('data_value_type', '')
+                        if pd.notna(dv_type) and 'Number' in str(dv_type):
+                            pass  # Numbers can exceed 100
+                        elif pd.notna(dv_type) and 'Rate' in str(dv_type):
+                            pass  # Rates can exceed 100
+                        else:
+                            result.add_error(row_num, 'data_value',
+                                f"Percentage {data_val_float}% exceeds 100%. If this is a count or rate, set data_value_type to 'Number' or 'Rate'.")
+                            row_valid = False
+                    # Check for outlier values (suspiciously low or high)
+                    elif data_val_float < 0.1:
+                        result.add_error(row_num, 'data_value',
+                            f"Unusually low value: {data_val_float}%. Values below 0.1% are rare. Verify this is correct.")
+                        row_valid = False
+                    elif data_val_float > 95:
+                        result.add_error(row_num, 'data_value',
+                            f"Unusually high value: {data_val_float}%. Values above 95% are rare. Verify this is correct.")
+                        row_valid = False
+                    # Check for excessive decimal precision
+                    if '.' in data_val_str:
+                        decimal_places = len(data_val_str.split('.')[-1])
+                        if decimal_places > 2:
+                            result.add_error(row_num, 'data_value',
+                                f"Excessive precision: {data_val_str} has {decimal_places} decimal places. Round to 1-2 decimal places.")
+                            row_valid = False
+                except (ValueError, TypeError):
+                    result.add_error(row_num, 'data_value',
+                        f"Invalid numeric value: '{data_value}'. Expected a number (e.g., 25.5).")
+                    row_valid = False
 
         # Validate sample_size if present
         if 'sample_size' in df.columns:
             sample = row.get('sample_size')
             if pd.notna(sample) and str(sample).strip() != '':
-                try:
-                    sample_int = int(float(sample))
-                    if sample_int < 0:
-                        result.add_error(row_num, 'sample_size',
-                            f"Negative sample size: {sample_int}. Sample size must be a positive integer.")
-                        row_valid = False
-                    elif sample_int < 10:
-                        result.add_error(row_num, 'sample_size',
-                            f"Sample size {sample_int} is too small for reliable estimates. BRFSS typically requires n >= 10.")
-                        row_valid = False
-                    elif sample_int < 50:
-                        result.add_warning(row_num, 'sample_size',
-                            f"Small sample size (n={sample_int}) may produce wide confidence intervals. Consider if estimate is reliable.")
-                except (ValueError, TypeError):
+                sample_str = str(sample).strip()
+                # Check for text placeholders
+                if sample_str.lower() in invalid_text_patterns:
                     result.add_error(row_num, 'sample_size',
-                        f"Invalid sample size: '{sample}'. Expected a positive integer.")
+                        f"Text value '{sample_str}' in sample_size. Use empty cell for missing data.")
                     row_valid = False
+                # Check for thousands separator
+                elif ',' in sample_str:
+                    result.add_error(row_num, 'sample_size',
+                        f"Remove comma from '{sample_str}'. Use plain number (e.g., 1234 not 1,234).")
+                    row_valid = False
+                else:
+                    try:
+                        sample_int = int(float(sample))
+                        if sample_int < 0:
+                            result.add_error(row_num, 'sample_size',
+                                f"Negative sample size: {sample_int}. Sample size must be a positive integer.")
+                            row_valid = False
+                        elif sample_int < 10:
+                            result.add_error(row_num, 'sample_size',
+                                f"Sample size {sample_int} is too small for reliable estimates. BRFSS typically requires n >= 10.")
+                            row_valid = False
+                        elif sample_int < 50:
+                            result.add_warning(row_num, 'sample_size',
+                                f"Small sample size (n={sample_int}) may produce wide confidence intervals. Consider if estimate is reliable.")
+                    except (ValueError, TypeError):
+                        result.add_error(row_num, 'sample_size',
+                            f"Invalid sample size: '{sample}'. Expected a positive integer.")
+                        row_valid = False
 
         # Validate confidence limits
         if 'confidence_limit_low' in df.columns and 'confidence_limit_high' in df.columns:
@@ -965,6 +1051,12 @@ def validate_aggregated_data(df, result):
                 except (ValueError, TypeError):
                     result.add_error(row_num, 'confidence_limit',
                         f"Invalid confidence limit values. Expected numeric values.")
+            # Check for missing CI when data_value is present
+            elif data_val_float is not None:
+                if (pd.isna(cl_low) or str(cl_low).strip() == '') and (pd.isna(cl_high) or str(cl_high).strip() == ''):
+                    result.add_error(row_num, 'confidence_limit',
+                        f"Missing confidence interval. Data value {data_val_float}% has no CI bounds. Add confidence_limit_low and confidence_limit_high.")
+                    row_valid = False
 
         # Validate break_out and break_out_category consistency
         if 'break_out' in df.columns and 'break_out_category' in df.columns:
@@ -1088,11 +1180,19 @@ def validate_brfss_data(df, result):
 
     # Generate summary statistics
     if 'locationabbr' in df.columns:
+        # Safely parse years, skipping non-numeric values
+        years_list = []
+        if 'year' in df.columns:
+            for y in df['year'].dropna().unique():
+                try:
+                    years_list.append(int(float(y)))
+                except (ValueError, TypeError):
+                    pass  # Skip non-numeric year values
         result.data_summary = {
             'format': data_format,
             'states': df['locationabbr'].nunique() if 'locationabbr' in df.columns else 0,
             'topics': df['topic'].nunique() if 'topic' in df.columns else 0,
-            'years': sorted([int(y) for y in df['year'].dropna().unique()]) if 'year' in df.columns else [],
+            'years': sorted(years_list),
             'topics_list': df['topic'].dropna().unique().tolist()[:10] if 'topic' in df.columns else []
         }
     elif '_state' in df.columns:
