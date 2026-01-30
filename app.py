@@ -672,6 +672,38 @@ def validate_raw_survey_data(df, result):
 
     result.add_info(f"Found {len(variable_cols)} recognized BRFSS variable columns")
 
+    # Check for columns that might be misspelled BRFSS variables
+    recognized_cols = {col.upper() for col, _, _ in variable_cols}
+    system_cols = {'_STATE', '_PSU', 'SEQNO', 'IYEAR', 'IMONTH', 'IDAY', 'DISPCODE'}
+
+    for col in df.columns:
+        col_upper = col.upper()
+        if col_upper in recognized_cols or col_upper in system_cols:
+            continue
+
+        # Check if column looks like a misspelled BRFSS variable
+        possible_matches = []
+        for var_code, var_info in BRFSS_VARIABLE_CODES.items():
+            # Check for similar names (contains most of the letters)
+            if len(col_upper) >= 4:
+                # Simple similarity: shared characters
+                shared = sum(1 for c in col_upper if c in var_code)
+                if shared >= len(var_code) * 0.6 or var_code in col_upper or col_upper in var_code:
+                    possible_matches.append(f"{var_code} ({var_info['name']})")
+
+        if possible_matches:
+            result.add_warning(0, col,
+                f"Column '{col}' not recognized. Did you mean: {', '.join(possible_matches[:3])}?")
+
+    # Warn if very few BRFSS columns were found
+    non_system_cols = [c for c in df.columns if c.upper() not in system_cols]
+    if len(variable_cols) == 0 and len(non_system_cols) > 2:
+        result.add_warning(0, 'columns',
+            f"No BRFSS variable columns recognized. Check column names match BRFSS codebook (e.g., GENHLTH, DIABETE4, SMOKE100).")
+    elif len(variable_cols) < 3 and len(non_system_cols) > 5:
+        result.add_warning(0, 'columns',
+            f"Only {len(variable_cols)} BRFSS variable columns recognized out of {len(non_system_cols)} data columns. Verify column names.")
+
     valid_rows = 0
     for idx, row in df.iterrows():
         row_num = idx + 2
