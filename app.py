@@ -757,6 +757,29 @@ def validate_aggregated_data(df, result):
     if unknown_cols:
         result.add_warning(0, 'columns', f"Unknown columns: {', '.join(unknown_cols[:5])}")
 
+    # Check for exact duplicate rows
+    duplicates = df.duplicated()
+    if duplicates.any():
+        dup_count = duplicates.sum()
+        dup_indices = df[duplicates].index.tolist()[:5]
+        dup_rows = [i + 2 for i in dup_indices]  # Convert to 1-based row numbers
+        result.add_error(0, 'duplicates',
+            f"Found {dup_count} duplicate row(s). First duplicates at rows: {dup_rows}. Remove duplicate entries.")
+
+    # Check for duplicate state+year+topic combinations (logical duplicates)
+    if all(col in df.columns for col in ['locationabbr', 'year', 'topic']):
+        key_cols = ['locationabbr', 'year', 'topic']
+        if 'break_out' in df.columns:
+            key_cols.append('break_out')
+        if 'break_out_category' in df.columns:
+            key_cols.append('break_out_category')
+        logical_dups = df.duplicated(subset=key_cols, keep=False)
+        if logical_dups.any():
+            dup_groups = df[logical_dups].groupby(key_cols).size()
+            dup_count = len(df[logical_dups])
+            result.add_error(0, 'logical_duplicates',
+                f"Found {dup_count} rows with duplicate state/year/topic combinations. Each combination should be unique.")
+
     valid_rows = 0
 
     for idx, row in df.iterrows():
@@ -903,6 +926,25 @@ def validate_aggregated_data(df, result):
                 try:
                     low = float(cl_low)
                     high = float(cl_high)
+
+                    # Check for negative confidence limits (invalid for prevalence)
+                    if low < 0:
+                        result.add_error(row_num, 'confidence_limit_low',
+                            f"Negative confidence limit: {low}. Prevalence CI bounds must be >= 0.")
+                        row_valid = False
+                    if high < 0:
+                        result.add_error(row_num, 'confidence_limit_high',
+                            f"Negative confidence limit: {high}. Prevalence CI bounds must be >= 0.")
+                        row_valid = False
+
+                    # Check for CI bounds exceeding 100% (for prevalence data)
+                    dv_type = row.get('data_value_type', '')
+                    is_prevalence = pd.isna(dv_type) or 'Prevalence' in str(dv_type) or '%' in str(row.get('data_value_unit', ''))
+                    if is_prevalence and high > 100:
+                        result.add_error(row_num, 'confidence_limit_high',
+                            f"CI upper bound ({high}%) exceeds 100%. Prevalence cannot exceed 100%.")
+                        row_valid = False
+
                     if low > high:
                         result.add_error(row_num, 'confidence_limit',
                             f"Confidence limits are inverted: low ({low}) > high ({high}). Swap the values or verify source data.")
@@ -921,7 +963,8 @@ def validate_aggregated_data(df, result):
                                 f"Wide confidence interval ({ci_width:.1f} percentage points). "
                                 f"This may indicate small sample size or high variability.")
                 except (ValueError, TypeError):
-                    pass
+                    result.add_error(row_num, 'confidence_limit',
+                        f"Invalid confidence limit values. Expected numeric values.")
 
         # Validate break_out and break_out_category consistency
         if 'break_out' in df.columns and 'break_out_category' in df.columns:
@@ -949,6 +992,49 @@ def validate_aggregated_data(df, result):
             if pd.notna(datasource) and str(datasource).strip():
                 if str(datasource).strip() not in VALID_DATASOURCES:
                     result.add_warning(row_num, 'datasource', f"Unrecognized datasource: '{datasource}'")
+
+        # Validate data_value_unit
+        if 'data_value_unit' in df.columns:
+            dv_unit = row.get('data_value_unit')
+            if pd.notna(dv_unit) and str(dv_unit).strip():
+                valid_units = ['%', 'per 100,000', 'per 1,000', 'Number', 'Years', 'Days']
+                if str(dv_unit).strip() not in valid_units:
+                    result.add_error(row_num, 'data_value_unit',
+                        f"Unrecognized data value unit: '{dv_unit}'. Expected one of: {', '.join(valid_units)}")
+                    row_valid = False
+
+        # Validate response column
+        if 'response' in df.columns:
+            response = row.get('response')
+            if pd.notna(response) and str(response).strip():
+                valid_responses = ['Yes', 'No', 'yes', 'no', 'YES', 'NO']
+                if str(response).strip() not in valid_responses:
+                    result.add_error(row_num, 'response',
+                        f"Invalid response value: '{response}'. Expected 'Yes' or 'No'.")
+                    row_valid = False
+
+        # Check for leading/trailing whitespace in key fields
+        for field in ['locationabbr', 'topic', 'question']:
+            if field in df.columns:
+                val = row.get(field)
+                if pd.notna(val):
+                    val_str = str(val)
+                    if val_str != val_str.strip():
+                        result.add_error(row_num, field,
+                            f"Field '{field}' has leading or trailing whitespace: '{val_str}'. Remove extra spaces.")
+                        row_valid = False
+
+        # Check for special/non-printable characters in text fields
+        for field in ['locationdesc', 'topic', 'question']:
+            if field in df.columns:
+                val = row.get(field)
+                if pd.notna(val):
+                    val_str = str(val)
+                    # Check for non-printable characters (except common ones)
+                    if any(ord(c) < 32 and c not in '\t\n\r' for c in val_str):
+                        result.add_error(row_num, field,
+                            f"Field '{field}' contains non-printable characters. Check for data corruption.")
+                        row_valid = False
 
         if row_valid:
             valid_rows += 1

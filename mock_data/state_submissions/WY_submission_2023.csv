@@ -1,9 +1,13 @@
 year,locationabbr,locationdesc,class,topic,question,response,break_out,break_out_category,sample_size,data_value,confidence_limit_low,confidence_limit_high,data_value_unit,data_value_type,datasource
 2023,WY,Wyoming,Chronic Health Indicators,Obesity,Percent of adults with obesity,Yes,Overall,Overall,1200,24.5,22.0,27.0,%,Crude Prevalence,BRFSS
-2023,WY,Wyoming,Chronic Health Indicators,Diabtes,Percent of adults with diabetes,Yes,Overall,Overall,1100,10.2,8.5,11.9,%,Crude Prevalence,BRFSS
-2023,XY,Wyoming,Chronic Health Indicators,Obesity,Invalid state abbreviation,Yes,Overall,Overall,1000,25.0,22.5,27.5,%,Crude Prevalence,BRFSS
+2023,WY,Wyoming,Chronic Health Indicators,Diabtes,Percent of adults with diabetes (TYPO IN TOPIC),Yes,Overall,Overall,1100,10.2,8.5,11.9,%,Crude Prevalence,BRFSS
+2023,XY,Wyoming,Chronic Health Indicators,Obesity,Invalid state abbreviation XY,Yes,Overall,Overall,1000,25.0,22.5,27.5,%,Crude Prevalence,BRFSS
 2023,WY,Wyoming,Chronic Health Indicators,Obesity,Negative data value,Yes,Overall,Overall,1150,-5.2,20.0,25.0,%,Crude Prevalence,BRFSS
 2023,WY,Wyoming,Chronic Health Indicators,Obesity,Value exceeds 100%,Yes,Overall,Overall,1100,125.0,120.0,130.0,%,Crude Prevalence,BRFSS
-2023,WY,Wyoming,Chronic Health Indicators,Obesity,Inverted CI,Yes,Overall,Overall,1050,26.0,30.0,22.0,%,Crude Prevalence,BRFSS
-2023,WY,Wyoming,Chronic Health Indicators,Obesity,Small sample,Yes,Overall,Overall,8,22.0,10.0,34.0,%,Crude Prevalence,BRFSS
-1980,WY,Wyoming,Chronic Health Indicators,Obesity,Year before BRFSS,Yes,Overall,Overall,1000,20.0,18.0,22.0,%,Crude Prevalence,BRFSS
+2023,WY,Wyoming,Chronic Health Indicators,Obesity,Inverted CI low greater than high,Yes,Overall,Overall,1050,26.0,30.0,22.0,%,Crude Prevalence,BRFSS
+2023,WY,Wyoming,Chronic Health Indicators,Obesity,Small sample under 10,Yes,Overall,Overall,8,22.0,10.0,34.0,%,Crude Prevalence,BRFSS
+1980,WY,Wyoming,Chronic Health Indicators,Obesity,Year before BRFSS started,Yes,Overall,Overall,1000,20.0,18.0,22.0,%,Crude Prevalence,BRFSS
+2023,WY,Wyoming,Chronic Health Indicators,Obesity,Negative CI lower bound,Yes,Overall,Overall,1000,5.0,-2.0,12.0,%,Crude Prevalence,BRFSS
+2023,WY,Wyoming,Chronic Health Indicators,Obesity,Invalid response value,Maybe,Overall,Overall,1000,22.0,20.0,24.0,%,Crude Prevalence,BRFSS
+2023, WY ,Wyoming,Chronic Health Indicators,Obesity,Whitespace in state abbr,Yes,Overall,Overall,1000,22.0,20.0,24.0,%,Crude Prevalence,BRFSS
+2023,WY,Wyoming,Chronic Health Indicators,Obesity,Invalid data unit,Yes,Overall,Overall,1000,22.0,20.0,24.0,pct,Crude Prevalence,BRFSS
