@@ -492,12 +492,8 @@ class ValidationResult:
         })
 
     def add_warning(self, row, field, message):
-        self.warnings.append({
-            'row': row,
-            'field': field,
-            'message': message,
-            'severity': 'warning'
-        })
+        # Warnings are now treated as errors - everything must be correct
+        self.add_error(row, field, message)
 
     def add_info(self, message):
         self.info.append(message)
@@ -1026,12 +1022,12 @@ def validate_brfss_data(df, result):
         result.data_summary = {'format': data_format}
 
     # Determine final status - simple pass/fail
-    if len(result.errors) == 0 and len(result.warnings) == 0:
+    if len(result.errors) == 0:
         result.status = 'passed'
         result.add_info("All validation checks passed!")
     else:
         result.status = 'failed'
-        result.add_info(f"Validation failed: {len(result.errors)} error(s), {len(result.warnings)} warning(s)")
+        result.add_info(f"Validation failed: {len(result.errors)} error(s)")
 
     return result
 
@@ -1116,14 +1112,12 @@ def validation_dashboard():
     failed = sum(1 for s in submissions.values() if s['status'] == 'failed')
 
     total_errors = sum(s['error_count'] for s in submissions.values())
-    total_warnings = sum(s['warning_count'] for s in submissions.values())
 
     summary = {
         'total_submissions': total,
         'passed': passed,
         'failed': failed,
         'total_errors': total_errors,
-        'total_warnings': total_warnings,
         'pass_rate': round(passed / total * 100, 1) if total > 0 else 0
     }
 

@@ -127,7 +127,6 @@
         }
 
         .summary-card.errors .value { color: #dc3545; }
-        .summary-card.warnings .value { color: #ffc107; }
         .summary-card.valid .value { color: #28a745; }
 
         .section {
@@ -198,10 +197,6 @@
             font-weight: 500;
         }
 
-        .severity-warning {
-            color: #856404;
-            font-weight: 500;
-        }
 
         .error-table-container {
             max-height: 400px;
@@ -325,10 +320,6 @@
                 <div class="value">{{ result.error_count }}</div>
                 <div class="label">Errors</div>
             </div>
-            <div class="summary-card warnings">
-                <div class="value">{{ result.warning_count }}</div>
-                <div class="label">Warnings</div>
-            </div>
         </div>
 
         {% if result.info %}
@@ -398,37 +389,6 @@
             {% if result.error_count > 100 %}
             <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
                 Showing first 100 of {{ result.error_count }} errors.
-            </p>
-            {% endif %}
-        </div>
-        {% endif %}
-
-        {% if result.warnings %}
-        <div class="section">
-            <h2>Warnings ({{ result.warning_count }})</h2>
-            <div class="error-table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Row</th>
-                            <th>Field</th>
-                            <th>Message</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for warn in result.warnings[:50] %}
-                        <tr>
-                            <td>{{ warn.row }}</td>
-                            <td><code>{{ warn.field }}</code></td>
-                            <td class="severity-warning">{{ warn.message }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% if result.warning_count > 50 %}
-            <p style="margin-top: 10px; color: #666; font-size: 0.9rem;">
-                Showing first 50 of {{ result.warning_count }} warnings.
             </p>
             {% endif %}
         </div>
