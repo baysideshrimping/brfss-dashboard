@@ -123,15 +123,16 @@
             background: #1e3a5f;
         }
 
-        .selected-file {
-            background: #e8f4f8;
-            padding: 15px 20px;
-            border-radius: 6px;
+        .selected-files-list {
             margin-top: 20px;
-            display: none;
+            text-align: left;
         }
 
-        .selected-file.show {
+        .selected-file-item {
+            background: #e8f4f8;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -144,7 +145,17 @@
         }
 
         .file-icon {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
+        }
+
+        .file-count {
+            background: #2d5a87;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-top: 15px;
+            display: inline-block;
         }
 
         .remove-file {
@@ -154,6 +165,11 @@
             padding: 5px 10px;
             border-radius: 4px;
             cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .remove-file:hover {
+            background: #c82333;
         }
 
         .alert {
@@ -257,23 +273,17 @@
         <form method="POST" enctype="multipart/form-data" id="uploadForm">
             <div class="upload-area" id="dropZone">
                 <div class="upload-icon">📁</div>
-                <h2>Drag & Drop your file here</h2>
-                <p>or click to browse</p>
-                <input type="file" name="file" id="fileInput" class="file-input" accept=".csv,.json">
+                <h2>Drag & Drop your files here</h2>
+                <p>or click to browse (multiple files supported)</p>
+                <input type="file" name="files" id="fileInput" class="file-input" accept=".csv,.json" multiple>
                 <button type="button" class="btn" onclick="document.getElementById('fileInput').click()">
-                    Select File
+                    Select Files
                 </button>
-                <div class="selected-file" id="selectedFile">
-                    <div class="file-info">
-                        <span class="file-icon">📄</span>
-                        <span id="fileName"></span>
-                    </div>
-                    <button type="button" class="remove-file" onclick="removeFile()">Remove</button>
-                </div>
+                <div id="selectedFiles" class="selected-files-list"></div>
             </div>
 
             <button type="submit" class="btn" id="submitBtn" style="width: 100%; display: none;">
-                Upload & Validate
+                Upload & Validate All Files
             </button>
         </form>
 
@@ -416,8 +426,7 @@
     <script>
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
-        const selectedFile = document.getElementById('selectedFile');
-        const fileName = document.getElementById('fileName');
+        const selectedFiles = document.getElementById('selectedFiles');
         const submitBtn = document.getElementById('submitBtn');
 
         dropZone.addEventListener('dragover', (e) => {
@@ -435,25 +444,42 @@
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 fileInput.files = files;
-                showSelectedFile(files[0]);
+                showSelectedFiles(files);
             }
         });
 
         fileInput.addEventListener('change', () => {
             if (fileInput.files.length > 0) {
-                showSelectedFile(fileInput.files[0]);
+                showSelectedFiles(fileInput.files);
             }
         });
 
-        function showSelectedFile(file) {
-            fileName.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
-            selectedFile.classList.add('show');
-            submitBtn.style.display = 'block';
+        function showSelectedFiles(files) {
+            selectedFiles.innerHTML = '';
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const div = document.createElement('div');
+                div.className = 'selected-file-item';
+                div.innerHTML = `
+                    <div class="file-info">
+                        <span class="file-icon">📄</span>
+                        <span>${file.name} (${formatFileSize(file.size)})</span>
+                    </div>
+                `;
+                selectedFiles.appendChild(div);
+            }
+            if (files.length > 0) {
+                const countDiv = document.createElement('div');
+                countDiv.className = 'file-count';
+                countDiv.textContent = files.length + ' file' + (files.length > 1 ? 's' : '') + ' selected';
+                selectedFiles.appendChild(countDiv);
+                submitBtn.style.display = 'block';
+            }
         }
 
-        function removeFile() {
+        function clearFiles() {
             fileInput.value = '';
-            selectedFile.classList.remove('show');
+            selectedFiles.innerHTML = '';
             submitBtn.style.display = 'none';
         }
 

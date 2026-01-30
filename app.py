@@ -780,6 +780,30 @@ def validate_aggregated_data(df, result):
             result.add_error(0, 'logical_duplicates',
                 f"Found {dup_count} rows with duplicate state/year/topic combinations. Each combination should be unique.")
 
+    # Check for filename/data mismatch (e.g., file named TX but contains CA data)
+    if 'locationabbr' in df.columns and result.filename:
+        filename_upper = result.filename.upper()
+        # Extract state from filename if it follows pattern STATE_submission_YEAR.csv
+        if '_SUBMISSION' in filename_upper or '_SUBMISSION' in filename_upper.replace('-', '_'):
+            filename_state = filename_upper.split('_')[0]
+            if len(filename_state) == 2 and filename_state in VALID_STATE_ABBRS:
+                data_states = df['locationabbr'].dropna().str.upper().unique()
+                mismatched_states = [s for s in data_states if s != filename_state and s in VALID_STATE_ABBRS]
+                if mismatched_states:
+                    result.add_error(0, 'filename_mismatch',
+                        f"Filename indicates '{filename_state}' but data contains states: {', '.join(mismatched_states)}. "
+                        f"Rename file or fix state codes in data.")
+
+    # Check for suspiciously identical data values (possible copy-paste error)
+    if 'data_value' in df.columns:
+        data_values = df['data_value'].dropna()
+        if len(data_values) >= 5:  # Only check if enough rows
+            unique_values = data_values.nunique()
+            if unique_values == 1:
+                result.add_error(0, 'identical_values',
+                    f"All {len(data_values)} data values are identical ({data_values.iloc[0]}). "
+                    f"This may indicate a copy-paste error.")
+
     valid_rows = 0
 
     # Common text patterns that indicate missing/invalid data
@@ -1239,22 +1263,31 @@ def index():
 
 @app.route('/submit', methods=['GET', 'POST'])
 def submit():
-    """File submission page."""
+    """File submission page - supports multiple file upload."""
     message = None
     error = None
 
     if request.method == 'POST':
-        if 'file' not in request.files:
-            error = 'No file selected'
+        files = request.files.getlist('files')
+
+        if not files or all(f.filename == '' for f in files):
+            error = 'No files selected'
         else:
-            file = request.files['file']
-            if file.filename == '':
-                error = 'No file selected'
-            elif file.filename.endswith(('.xlsx', '.xls')):
-                error = 'Excel files (.xlsx/.xls) are not supported. Please export your data as CSV first (File → Save As → CSV).'
-            elif not file.filename.endswith(('.csv', '.json')):
-                error = 'Only CSV and JSON files are supported. Please convert your file to CSV format.'
-            else:
+            processed_ids = []
+            errors_list = []
+
+            for file in files:
+                if file.filename == '':
+                    continue
+
+                if file.filename.endswith(('.xlsx', '.xls')):
+                    errors_list.append(f"{file.filename}: Excel files not supported. Export as CSV first.")
+                    continue
+
+                if not file.filename.endswith(('.csv', '.json')):
+                    errors_list.append(f"{file.filename}: Only CSV and JSON files supported.")
+                    continue
+
                 # Generate unique submission ID
                 submission_id = str(uuid.uuid4())[:8]
 
@@ -1295,10 +1328,20 @@ def submit():
 
                 # Store result and save to file
                 submissions[submission_id] = result.to_dict()
-                save_submissions()
+                processed_ids.append(submission_id)
 
-                message = f"File submitted successfully! Submission ID: {submission_id}"
-                return redirect(url_for('validation_detail', submission_id=submission_id))
+            # Save all submissions
+            save_submissions()
+
+            if errors_list:
+                error = ' | '.join(errors_list)
+
+            # Redirect based on number of files processed
+            if len(processed_ids) == 1:
+                return redirect(url_for('validation_detail', submission_id=processed_ids[0]))
+            elif len(processed_ids) > 1:
+                message = f"Successfully processed {len(processed_ids)} files"
+                return redirect(url_for('validation_dashboard'))
 
     return render_template('submit.html', message=message, error=error)
 
